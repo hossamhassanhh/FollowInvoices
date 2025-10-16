@@ -1,0 +1,46 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>رقم الساب المؤقت</label>
+        <input class="input" type="text" id="id" required>
+    </div>
+    <div class="input-wrapper">
+        <label>حالة الفاتورة</label>
+        <input class="input" type="text" id="invoice-status" required>
+    </div>
+    <div class="input-wrapper">
+        <label for="invoice-sap-status">حالة الفاتورة على ساب</label>
+        <select id="invoice-sap-status" required>
+            <option value="" disabled selected>اختر حالة الفاتورة</option>
+            <option value="hold">Hold</option>
+            <option value="park">Park</option>
+            <option value="post">Post</option>
+        </select>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+        <button class="custom-btn" onclick="RedirectToExecuteEditAction()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        window.location.href = url;
+    }
+    function RedirectToExecuteEditAction() {
+        var id = document.getElementById('id').value;
+        var invoiceStatus = document.getElementById('invoice-status').value;
+        var invoiceSapStatus = document.getElementById('invoice-sap-status').value;
+
+        // Construct the URL with parameters
+        var url = '@Url.Action("ExecuteEdit", "Home")' +
+            '?id=' + encodeURIComponent(id) +
+            '&invoiceStatus=' + encodeURIComponent(invoiceStatus) +
+            '&invoiceSapStatus=' + encodeURIComponent(invoiceSapStatus);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

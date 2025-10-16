@@ -1,0 +1,48 @@
+﻿<div>
+	<h2>قائمة التقارير</h2>
+	<div>
+		<a href="@Url.Action("AllVoicesReportView", "Home")" style="font-size: larger; color:	#0077b6;">استعلام عن الكل</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByExchangeCaseWithDateReportView", "Home")" style="font-size: larger; color:	#0077b6;">استعلام بحالة طلب الصرف</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterBySapTempCodeReportView", "Home")" style="font-size: larger; color:	#0077b6;">استعلام برقم الايزو</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByInvoiceNumberReportView", "Home")" style="font-size: larger; color:	#0077b6;">استعلام برقم الفاتورة</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByRequesterReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام بالجهه الطالبة</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByVendorReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام باسم المورد</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByExchangeNumberReportView", "Home")" style="font-size: larger; color:	#0077b6;">استعلام برقم طلب الصرف</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByEmployeeReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام باسم الموظف</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByInvoiceValueReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام بقيمة الفاتورة</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByInvoiceDateReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام بتاريخ الفاتورة</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByInvoiceReceiptDateReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام بتاريخ اسلام الفاتورة</a>
+	</div>
+	<div>
+		<a href="@Url.Action("FilterByAreaReportView", "Home")" style="font-size: larger; color: #0077b6;">استعلام بالموقع</a>
+	</div>
+	<div class="button-container">
+		<button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+	</div>
+</div>
+<script type="text/javascript">
+	function GoToHomePage() {
+		var url = '@Url.Action("Index", "Home")';
+		window.location.href = url;
+	}
+</script>

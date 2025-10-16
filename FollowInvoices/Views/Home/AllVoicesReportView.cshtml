@@ -1,0 +1,19 @@
+﻿<div class="form-container">
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+        <button class="custom-btn" onclick="AllVoicesReport()">تنفيذ</button>
+    </div>
+</div>
+<script src="/js/jquery-3.7.1.min.js"></script>
+<script type="text/javascript">
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        // Redirect to the URL
+        window.location.href = url;
+    }
+    function AllVoicesReport() {
+        var url = '@Url.Action("AllVoicesReport", "Home")';
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

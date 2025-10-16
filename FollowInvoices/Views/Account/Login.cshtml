@@ -1,0 +1,54 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>اسم المستخدم</label>
+        <input type="text" id="username" required>
+    </div>
+    <div class="input-wrapper">
+        <label>الرقم السري</label>
+        <input type="password" id="password" required>
+    </div>
+    
+
+    <div class="button-container">
+        <button id="loginButton" class="custom-btn" onclick="handleLoginClick(event)">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script>
+    function handleLoginClick(event) {
+        event.preventDefault();
+
+        var username = $('#username').val();
+        var password = $('#password').val();
+
+        if (!username || !password) {
+            alert("Please enter both username and password.");
+            return;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: '/Account/Login', // استخدم الرابط مباشر أو بدّل بـ Razor لو ضروري
+            data: { username: username, password: password },
+            success: function (response) {
+                if (response.success) {
+                    window.location.href = '/Home/Index'; // نفس الشيء، استخدم Razor لو حبيت
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function () {
+                alert("An error occurred while processing your request. Please try again.");
+            }
+        });
+    }
+
+    document.getElementById('password').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            handleLoginClick(event);
+        }
+    });
+</script>
+

@@ -1,0 +1,106 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>رقم الايزو</label>
+        <input class="input" type="text" id="iso-number" required>
+    </div>
+    <div class="input-wrapper">
+        <label>رقم الفاتورة</label>
+        <input class="input" type="text" id="invoice-number" required>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+        <button class="custom-btn" onclick="RedirectToExecuteDeleteAction()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        window.location.href = url;
+    }
+    function RedirectToExecuteDeleteAction() {
+        var id = document.getElementById('iso-number').value;
+        var invoiceNumber = document.getElementById('invoice-number').value;
+
+        // Construct the URL with parameters
+        var url = '@Url.Action("ExecuteDelete", "Home")' +
+            '?id=' + encodeURIComponent(id) + 
+            '&invoiceNumber=' + encodeURIComponent(invoiceNumber);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+
+    document.getElementById('iso-number').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { // Check if the Enter key is pressed
+            updateInvoiceNumber();
+        }
+    });
+
+    function updateInvoiceNumber() {
+        var isoNumber = document.getElementById('iso-number').value;
+        var invoiceInput = document.getElementById('invoice-number');
+        var invoiceDropdown = document.createElement('select');
+        if (isoNumber) {
+            // Perform AJAX call to fetch invoice numbers
+            $.ajax({
+                url: '/Home/GetInvoiceNumbers', // Adjust as per your route
+                type: 'GET',
+                data: { isoNumber: isoNumber },
+                success: function (response) {
+                    // Check the length of the response
+                    if (response.length > 1) {
+                        invoiceDropdown.id = invoiceInput.id; // Preserve the ID for compatibility
+
+                        // Add a placeholder option
+                        const placeholderOption = document.createElement('option');
+                        placeholderOption.value = '';
+                        placeholderOption.textContent = 'Select an invoice';
+                        placeholderOption.disabled = true;
+                        placeholderOption.selected = true;
+                        invoiceDropdown.appendChild(placeholderOption);
+
+                        // Populate dropdown with invoice numbers
+                        response.forEach(invoice => {
+                            const option = document.createElement('option');
+                            option.value = invoice;
+                            option.textContent = invoice;
+                            invoiceDropdown.appendChild(option);
+                        });
+
+                    } else if (response.length === 1) {
+                        invoiceDropdown = document.createElement('input');
+                        invoiceDropdown.type = 'text';
+                        invoiceDropdown.id = invoiceInput.id;
+                        // Set the single invoice number as the value of the input field
+                        invoiceDropdown.value = response[0];
+                    } else {
+                        invoiceDropdown = document.createElement('input');
+                        invoiceDropdown.type = 'text';
+                        invoiceDropdown.id = invoiceInput.id;
+                        invoiceDropdown.value = '';
+                        // No invoice numbers found
+                        // console.error('No invoice numbers found for the given ISO number.');
+                    }
+                    // Replace the original input with the dropdown
+                    invoiceInput.parentNode.replaceChild(invoiceDropdown, invoiceInput);
+                },
+                error: function (xhr, status, error) {
+                    alert('Error fetching invoice numbers. Please try again.');
+                }
+            });
+        } else {
+            alert('Please enter a valid ISO number.');
+        }
+    }
+
+    window.addEventListener("pageshow", function (event) {
+        if (event.persisted || window.performance.getEntriesByType("navigation")[0].type === "back_forward") {
+            location.reload(); // Forces the page to refresh and clear form values
+        }
+    });
+
+</script>

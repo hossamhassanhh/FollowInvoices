@@ -1,0 +1,27 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>اسم المورد</label>
+        <input type="text" id="vendor-name" required>
+    </div>
+</div>
+<div class="button-container">
+    <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    <button class="custom-btn" onclick="RedirectToExecuteAddVendorAction()">تنفيذ</button>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        window.location.href = url;
+    }
+
+    function RedirectToExecuteAddVendorAction() {
+        var vendor_name = document.getElementById('vendor-name').value;
+
+        var url = '@Url.Action("ExecuteAddVendor", "Home")' +
+            '?vendor_name=' + encodeURIComponent(vendor_name);
+        window.location.href = url;
+    }
+</script>

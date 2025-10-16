@@ -1,0 +1,133 @@
+﻿@{
+    // Cast the ViewBag data to a DataTable
+    System.Data.DataTable dataTable = ViewBag.DataTable;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="/js/jspdf.umd.min.js"></script>
+    <script src="/js/jspdf.plugin.autotable.js"></script>
+    <script src="/js/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Display Table within the table container -->
+    <div class="table-container">
+        @if (dataTable != null && dataTable.Rows.Count > 0)
+        {
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        @for (int i = dataTable.Columns.Count - 1; i >= 0; i--)
+                        {
+                            <th>@dataTable.Columns[i].ColumnName</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (System.Data.DataRow row in dataTable.Rows)
+                    {
+                        <tr>
+                            @foreach (var cellIndex in Enumerable.Range(0, row.ItemArray.Length).Reverse())
+                            {
+                                <td>@row.ItemArray[cellIndex]</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>غير مسجل</p>
+        }
+    </div>
+
+    <!-- Buttons for Print, PDF, and Excel Export -->
+    <div class="button-container">
+        <button class="custom-btn" onclick="printTable()">طباعة الجدول</button>
+        @* <button class="custom-btn" onclick="exportPDF()">تصدير كـ PDF</button> *@
+        <button class="custom-btn" onclick="exportExcel()">تصدير كـ Excel</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    </div>
+
+    <script>
+
+        function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        window.location.href = url;
+    }
+
+        function printTable() {
+            window.print();
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF("p", "pt", "a4");
+
+            if (typeof doc.autoTable !== 'function') {
+                console.error("autoTable plugin could not be initialized.");
+                return;
+            }
+
+            doc.text("Exported Table Data", 40, 30, { align: 'right' });
+            doc.setFontSize(12);
+
+            const data = [];
+            const table = document.getElementById("dataTable");
+
+            for (let row of table.rows) {
+                const rowData = [];
+                for (let cell of row.cells) {
+                    rowData.push(cell.innerText);
+                }
+                data.push(rowData);
+            }
+
+            doc.autoTable({
+                head: [data[0]],           // Set header row
+                body: data.slice(1),       // Set data rows
+                theme: 'grid',
+                startY: 50,
+                styles: {
+                    font: 'courier',
+                    halign: 'right',
+                    fontStyle: 'bold'
+                },
+                margin: { top: 50, bottom: 30, left: 20, right: 20 },
+                tableWidth: 'auto',
+                bodyStyles: {
+                    cellPadding: 4,
+                },
+                didDrawPage: (data) => {
+                    doc.setFontSize(10);
+                    doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
+                },
+                pageBreak: 'auto'
+            });
+
+            doc.save("table-data.pdf");
+        }
+
+        function exportExcel() {
+            const table = document.getElementById("dataTable");
+            const workbook = XLSX.utils.book_new();
+            const worksheetData = [];
+
+            for (let row of table.rows) {
+                const rowData = [];
+                for (let cell of row.cells) {
+                    rowData.push(cell.innerText);
+                }
+                worksheetData.push(rowData);
+            }
+
+            const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+            XLSX.writeFile(workbook, "table-data.xlsx");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label for="area">الموقع</label>
+        <select id="area" required>
+            <option value="" selected></option>
+            <option value="الرئيسي">الرئيسي</option>
+            <option value="المعدية">المعدية</option>
+        </select>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
+        <button class="custom-btn" onclick="FilterByAreaReport()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function FilterByAreaReport() {
+        var id = getElementValue("area");
+        var url = '@Url.Action("FilterByAreaReport", "Home")' +
+            '?id=' + encodeURIComponent(id);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

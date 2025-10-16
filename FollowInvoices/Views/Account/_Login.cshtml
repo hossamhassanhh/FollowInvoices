@@ -1,0 +1,48 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>اسم المستخدم</label>
+        <input type="text" id="username" required>
+    </div>
+    <div class="input-wrapper">
+        <label>الرقم السري</label>
+        <input type="password" id="password" required>
+    </div>
+    <div class="button-container">
+        <button id="loginButton" class="custom-btn">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#loginButton').click(function (e) {
+            e.preventDefault();
+
+            var username = $('#username').val();
+            var password = $('#password').val();
+
+            if (!username || !password) {
+                alert("Please enter both username and password.");
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Login", "Account")',
+                data: { username: username, password: password },
+                success: function (response) {
+                    if (response.success) {
+                        window.location.href = '@Url.Action("Index", "Home")';
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert("An error occurred while processing your request. Please try again.");
+                }
+            });
+        });
+    });
+</script>
+

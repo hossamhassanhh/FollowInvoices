@@ -1,0 +1,382 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>المورد</label>
+        <select id="vendor-dropdown" required oninput="updateInvoiceNumber()">
+            <option value="">اختر المورد</option>
+        </select>
+    </div>
+    <div class="input-wrapper">
+        <label>رقم الفاتورة</label>
+        <div class="div-container">
+            <div class="dropdown">
+                <input type="text" id="searchBox" placeholder="بحث..." onclick="toggleDropdown()" onkeyup="filterOptions()">
+                <div class="dropdown-content" id="dropdownContent"></div>
+            </div>
+            <button class="btn" onclick="updateInvoiceData()">استعلام</button>
+        </div>        
+    </div>
+    <div class="input-wrapper">
+        <label>يرجي ادخال اسم الموظف</label>
+        <select id="employee-name" disabled>
+            <option value="" selected></option>
+            <option value="خالد يوسف">خالد يوسف</option>
+            <option value="محمد المانع">محمد المانع</option>
+            <option value="الشيماء ابوبكر">الشيماء ابوبكر</option>
+            <option value="مني شاهين">مني شاهين</option>
+            <option value="ريهام الشيح">ريهام الشيح</option>
+            <option value="ايات اسامة">ايات اسامة</option>
+            <option value="تامر عبد الفتاح">تامر عبد الفتاح</option>
+            <option value="مني الشهاوي">مني الشهاوي</option>
+            <option value="مدحت سمیر">مدحت سمیر</option>
+            <option value="عصام عبد العال">عصام عبد العال</option>
+            <option value="ندا سمير">ندا سمير</option>
+            <option value="شيماء ماجد">شيماء ماجد</option>
+            <option value="اسلام علی">اسلام علی</option>
+            <option value="رانيا ممدوح">رانيا ممدوح</option>
+            <option value="محمد اسماعیل">محمد اسماعیل</option>
+            <option value="نجلاء سعد">نجلاء سعد</option>
+            <option value="ايمن آمين">ايمن آمين</option>
+        </select>
+    </div>
+    <div class="input-wrapper">
+        <label>رقم الصرف</label>
+        <input type="text" id="exchange-number" disabled>
+    </div>
+    <div class="input-wrapper">
+        <label for="exchange-case">اختر حالة الصرف</label>
+        <div class="div-container">
+            <select id="exchange-case" required>
+                <option value="" selected></option>
+                <option value="تسويات">تسويات</option>
+                <option value="المصرفية">المصرفية</option>
+                <option value="الحسابات">الحسابات</option>
+                <option value="دفعة مقدمة">دفعة مقدمة</option>
+                <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
+                <option value="فاتورة">فاتورة</option>
+                <option value="رد تأمين">رد تأمين</option>
+                <option value="تسوية دفعة">تسوية دفعة</option>
+                <option value="استعاضة">استعاضة</option>
+                <option value="ايجار">ايجار</option>
+                <option value="سلفة مؤقتة">سلفة مؤقتة</option>
+                <option value="سلفة مستديمة">سلفة مستديمة</option>
+                <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
+                <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
+            </select>
+            <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button>
+        </div>        
+    </div>
+    <div class="input-wrapper">
+        <label>المبلغ</label>
+        <input type="text" id="invoice-value">
+    </div>
+    <div class="input-wrapper">
+        <label for="currency">العملة</label>
+        <select id="currency">
+            <option value="" selected></option>
+            <option value="جنيه مصرى">جنيه مصرى</option>
+            <option value="دولار امريكي">دولار امريكي</option>
+            <option value="يورو">يورو</option>
+            <option value="جنيه استرليني">جنيه استرليني</option>
+            <option value="ریال سعودی">ریال سعودی</option>
+            <option value="کرونه نرویجی">کرونه نرویجی</option>
+            <option value="ین يابانی">ین يابانی</option>
+        </select>
+    </div>
+    <div class="input-wrapper">
+        <label for="back-to-requester">ارجاع الي الجهة الطالبة</label>
+        <select id="back-to-requester" required>
+            <option value="" selected></option>
+            <option value="لا">لا</option>
+            <option value="نعم">نعم</option>
+        </select>
+    </div>
+
+    <div class="input-wrapper" id="to-requester-div" style="display: none;">
+        <label>تاريخ الارسال للجهة الطالبة</label>
+        <input class="input" type="date" id="to-requester-date" lang="ar">
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+        <button class="custom-btn" onclick="RedirectToFinalizeExchangeAction()">تعديل</button>
+        <button class="custom-btn" onclick="RedirectToFinalizeExchangeAction()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+<script src="/js/select2.min.js"></script>
+<link href="/css/select2.min.css" rel="stylesheet" />
+<script>
+    // Get both elements
+    const select = document.getElementById('back-to-requester');
+    const dateDiv = document.getElementById('to-requester-div');
+
+      // Listen for any change or input
+    backToRequesterSelect.addEventListener('input', function () {
+      if (this.value === "نعم") {
+        toRequesterDateDiv.style.display = 'block'; // show div
+      } else {
+        toRequesterDateDiv.style.display = 'none'; // hide div
+        document.getElementById('to-requester-date').value = ''; // clear date
+      }
+    });
+</script>
+<script type="text/javascript">
+    const newElement = document.createElement('input');
+    newElement.setAttribute("type", "text");
+    newElement.setAttribute("required", true);
+    function EmptyField(elementId) {
+        var element = document.getElementById(elementId);
+        console.log(element);
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            element.parentNode.replaceChild(newElement, element);
+            console.log(element);
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            element.value = '';
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+        }
+    }
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+
+    function setElementValue(elementId, value) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            // Loop through options and set the selected option
+            for (let option of element.options) {
+                if (option.value === value) {
+                    option.selected = true;
+                    break;
+                }
+            }
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            element.value = value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+        }
+    }
+    
+    function toggleDropdown() {
+        let dropdownContent = document.getElementById("dropdownContent");
+        if (dropdownContent) {
+            dropdownContent.style.display = (dropdownContent.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        let dropdown = document.querySelector(".dropdown");
+        let dropdownContent = document.getElementById("dropdownContent");
+
+        if (dropdown && dropdownContent) {
+            if (!dropdown.contains(event.target)) {
+                dropdownContent.style.display = "none";
+            }
+        }
+    });
+
+    function filterOptions() {
+        let input = document.getElementById("searchBox").value.toLowerCase();
+        let labels = document.querySelectorAll(".checkbox-container");
+
+        labels.forEach(label => {
+            let text = label.innerText.toLowerCase();
+            label.style.display = text.includes(input) ? "flex" : "none";
+            console.log(label);
+        });
+    }
+
+    function attachCheckboxListeners() {
+        document.querySelectorAll(".dropdown-content input[type='checkbox']").forEach(checkbox => {
+            checkbox.addEventListener("change", function () {
+                let selected = Array.from(document.querySelectorAll(".dropdown-content input[type='checkbox']:checked"))
+                    .map(cb => cb.value)
+                    .join(", ");
+                document.getElementById("searchBox").value = selected;
+            });
+        });
+    }
+
+    document.getElementById('vendor-dropdown').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            updateInvoiceNumber();
+        }
+    });
+
+    function GoToHomePage() {
+        window.location.href = '@Url.Action("Index", "Home")';
+    }
+
+    function RedirectToFinalizeExchangeAction() {
+        let vendorName = getElementValue('vendor-dropdown');
+        let invoiceNumbers = document.getElementById('searchBox').value;
+        let exchangeCase = getElementValue('exchange-case');
+
+        let url = '@Url.Action("ExecuteFinalizeExchange", "Home")' +
+            '?vendorName=' + encodeURIComponent(vendorName) +
+            '&invoiceNumbers=' + encodeURIComponent(invoiceNumbers) +
+            '&exchangeCase=' + encodeURIComponent(exchangeCase);
+
+        window.location.href = url;
+    }
+
+    $(document).ready(function () {
+        populateVendorDropdown();
+    });
+
+    function populateVendorDropdown() {
+        $.ajax({
+            url: '/Home/GetAllVendors',
+            type: 'GET',
+            success: function (vendors) {
+                console.log('checkpoint');
+                let vendorDropdown = $("#vendor-dropdown");
+                console.log(vendorDropdown);
+                vendorDropdown.empty();  // Clear existing options
+                vendorDropdown.append('<option value="">اختر المورد</option>'); // Default option
+
+                vendors.forEach(vendor => {
+                    vendorDropdown.append(new Option(vendor, vendor));
+                    console.log(vendor);
+                });
+                console.log(vendorDropdown);
+            },
+            error: function () {
+                console.error('Error fetching vendors.');
+            }
+        });
+    }
+
+    function updateInvoiceNumber() {
+        const vendorName = $("#vendor-dropdown").val();
+        const dropdownContent = $("#dropdownContent");
+
+        if (vendorName) {
+            $.ajax({
+                url: '/Home/GetInvoiceNumbersByVendor',
+                type: 'GET',
+                data: { vendorName: vendorName },
+                success: function (response) {
+                    dropdownContent.html("");
+
+                    if (response.length > 1) {
+                        response.forEach(invoice => {
+                            let div = $("<div>").addClass("checkbox-container");
+                            let checkbox = $("<input>").attr({ type: "checkbox", value: invoice });
+
+                            div.append(checkbox).append(document.createTextNode(invoice));
+                            dropdownContent.append(div);
+                        });
+
+                        attachCheckboxListeners();
+                    } else if (response.length === 1) {
+                        $("#searchBox").val(response[0]);
+                    } else {
+                        alert('لا يوجد فواتير تخص هذا المورد');
+                    }
+                },
+                error: function () {
+                    alert('حدث خطأ أثناء جلب الفواتير');
+                }
+            });
+        }
+    }
+
+    function updateInvoiceData() {
+        const vendorName = getElementValue('vendor-dropdown');
+        const invoiceNumber = getElementValue('searchBox');
+        console.log(invoiceNumber);
+        if (invoiceNumber !== '') {
+            $.ajax({
+                url: '/Home/GetExchangeDataByVendorAndInvoice',
+                type: 'GET',
+                data: { vendorName: vendorName, invoiceNumber: invoiceNumber },
+                success: function (response) {
+                    const responseDetails = response.details;
+                    setElementValue('employee-name', responseDetails.employeeName);
+                    setElementValue('exchange-number', responseDetails.exchangeNumber);
+                    setElementValue('invoice-value', responseDetails.invoiceExchangeValue);
+                    setElementValue('currency', responseDetails.exchangeCurrency);
+                    setElementValue('back-to-requester', responseDetails.backToRequester);
+                    setElementValue('to-requester-date', responseDetails.toRequesterDate);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching invoice data:', error);
+                    alert('Error fetching invoice data. Please try again.');
+                }
+            });
+        } else {
+            alert('رقم الفاتورة غير موجود');
+        }
+    }
+
+    document.getElementById('searchBox').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            GetVendorNameByInvoiceNumber();
+        }
+    });
+
+    function GetVendorNameByInvoiceNumber() {
+        const invoiceNumber = $("#searchBox").val();
+        // const vendorName = document.createElement('input');
+        // vendorName.setAttribute('id', 'vendor-dropdown');
+        // var VendorNameElement = document.getElementById("vendor-dropdown");
+        if (invoiceNumber) {
+            $.ajax({
+                url: '/Home/GetVendorNameByInvoiceNumber',
+                type: 'GET',
+                data: { invoiceNumber: invoiceNumber },
+                success: function (response) {   
+                    console.log(response.details.vendorName);
+                    // VendorNameElement.parentNode.replaceChild(vendorName, VendorNameElement);
+                    // $("#vendor-dropdown").val(response.details.vendorName);
+                    setElementValue("vendor-dropdown", response.details.vendorName)
+                },
+                error: function () {
+                    alert('حدث خطأ أثناء جلب المورد المسجل علي هذه الفاتورة');
+                }
+            });
+        }
+    }
+
+</script>

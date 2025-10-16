@@ -1,0 +1,68 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>يرجي ادخال اسم الموظف</label>
+        <select id="employee-name" required>
+            <option value="" selected></option>
+            <option value="خالد يوسف">خالد يوسف</option>
+            <option value="محمد المانع">محمد المانع</option>
+            <option value="الشيماء ابوبكر">الشيماء ابوبكر</option>
+            <option value="مني شاهين">مني شاهين</option>
+            <option value="ريهام الشيح">ريهام الشيح</option>
+            <option value="ايات اسامة">ايات اسامة</option>
+            <option value="تامر عبد الفتاح">تامر عبد الفتاح</option>
+            <option value="مني الشهاوي">مني الشهاوي</option>
+            <option value="مدحت سمیر">مدحت سمیر</option>
+            <option value="عصام عبد العال">عصام عبد العال</option>
+            <option value="ندا سمير">ندا سمير</option>
+            <option value="شيماء ماجد">شيماء ماجد</option>
+            <option value="اسلام علی">اسلام علی</option>
+            <option value="رانيا ممدوح">رانيا ممدوح</option>
+            <option value="محمد اسماعیل">محمد اسماعیل </option>
+            <option value="نجلاء سعد">نجلاء سعد</option>
+            <option value="ايمن آمين">ايمن آمين</option>
+        </select>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
+        <button class="custom-btn" onclick="FilterByEmployeeReport()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function FilterByEmployeeReport() {
+        var id = getElementValue("employee-name");
+        var url = '@Url.Action("FilterByEmployeeReport", "Home")' +
+            '?id=' + encodeURIComponent(id);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

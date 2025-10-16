@@ -1,0 +1,104 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label for="exchange-case">اختر حالة الصرف</label>
+        <div class="div-container">
+            <select id="exchange-case" required>
+                <option value="" selected></option>
+                <option value="تسويات">تسويات</option>
+                <option value="المصرفية">المصرفية</option>
+                <option value="الحسابات">الحسابات</option>
+                <option value="دفعة مقدمة">دفعة مقدمة</option>
+                <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
+                <option value="فاتورة">فاتورة</option>
+                <option value="رد تأمين">رد تأمين</option>
+                <option value="تسوية دفعة">تسوية دفعة</option>
+                <option value="استعاضة">استعاضة</option>
+                <option value="ايجار">ايجار</option>
+                <option value="سلفة مؤقتة">سلفة مؤقتة</option>
+                <option value="سلفة مستديمة">سلفة مستديمة</option>
+                <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
+                <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
+            </select>
+            <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button>
+        </div>
+        <div class="input-wrapper">
+            <label>التاريخ</label>
+            <input class="input" type="date" id="date" lang="ar" required>
+        </div>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
+        <button class="custom-btn" onclick="FilterByExchangeCaseWithDateReport()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    const newElement = document.createElement('input');
+    newElement.setAttribute("type", "text");
+    newElement.setAttribute("required", true);
+    function EmptyField(elementId) {
+        var element = document.getElementById(elementId);
+        console.log(element);
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            element.parentNode.replaceChild(newElement, element);
+            console.log(element);
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            element.value = '';
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+        }
+    }
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function FilterByExchangeCaseWithDateReport() {
+        console.log("test");
+        var id = getElementValue("exchange-case");
+        console.log(id);
+        var date = getElementValue("date");
+        
+        console.log(date);
+
+        var url = '@Url.Action("FilterByExchangeCaseWithDateReport", "Home")' +
+            '?id=' + encodeURIComponent(id) +
+            '&date=' + encodeURIComponent(date);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

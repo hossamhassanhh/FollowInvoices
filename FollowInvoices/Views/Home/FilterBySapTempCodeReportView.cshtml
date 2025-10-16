@@ -1,0 +1,27 @@
+﻿<div class="form-container">
+    <div class="input-wrapper">
+        <label>رقم الايزو</label>
+        <input type="text" id="id" required>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
+        <button class="custom-btn" onclick="FilterBySapTempCodeReport()">تنفيذ</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function FilterBySapTempCodeReport() {
+        var id = document.getElementById("id").value;
+        var url = '@Url.Action("FilterBySapTempCodeReport", "Home")' +
+            '?id=' + encodeURIComponent(id);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>
