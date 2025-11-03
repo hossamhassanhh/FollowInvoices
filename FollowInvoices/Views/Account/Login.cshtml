@@ -1,54 +1,96 @@
-﻿<div class="form-container">
-    <div class="input-wrapper">
-        <label>اسم المستخدم</label>
-        <input type="text" id="username" required>
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>@ViewData["Title"]</title>    
+</head>
+
+<body class="home-page">
+    <div class="home-wrapper">
+        
+
+        <!-- Login Form -->
+        <div class="form-container">
+            <div style = "margin-bottom: 30px ">
+                <h3>شركة خدمات البترول البحرية</h3>
+                <div class="icon-wrapper">
+                    <svg class="followup-icon" xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24">
+                        <defs>
+                            <linearGradient id="docGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#f1f5f9" />
+                                <stop offset="100%" stop-color="#e2e8f0" />
+                            </linearGradient>
+                            <linearGradient id="circleGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#34d399" />
+                                <stop offset="100%" stop-color="#059669" />
+                            </linearGradient>
+                        </defs>
+                        <rect x="2.5" y="2.5" width="15" height="19" rx="2"
+                              fill="url(#docGrad)" stroke="#94a3b8" stroke-width="1" />
+                        <line x1="5" y1="7" x2="15" y2="7" stroke="#64748b" stroke-width="1" />
+                        <line x1="5" y1="10" x2="15" y2="10" stroke="#64748b" stroke-width="1" />
+                        <line x1="5" y1="13" x2="12" y2="13" stroke="#64748b" stroke-width="1" />
+                        <circle cx="15.5" cy="16.5" r="4.5" fill="url(#circleGrad)" stroke="#065f46" stroke-width="1" />
+                        <text x="15.5" y="16.5" font-family="Arial" font-size="6" fill="#ffffff"
+                              font-weight="bold" text-anchor="middle" dominant-baseline="middle">$</text>
+                    </svg>
+                </div>
+                <div class="icon-label">نظام متابعة الفواتير</div>
+            </div>
+            <div class="input-wrapper">
+                <label>اسم المستخدم</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="input-wrapper">
+                <label>الرقم السري</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="button-container">
+                <button id="loginButton" class="custom-btn" onclick="handleLoginClick(event)">تنفيذ</button>
+            </div>
+        </div>
     </div>
-    <div class="input-wrapper">
-        <label>الرقم السري</label>
-        <input type="password" id="password" required>
-    </div>
-    
 
-    <div class="button-container">
-        <button id="loginButton" class="custom-btn" onclick="handleLoginClick(event)">تنفيذ</button>
-    </div>
-</div>
+    <script src="/js/jquery-3.7.1.min.js"></script>
 
-<script src="/js/jquery-3.7.1.min.js"></script>
+    <script>
+        function handleLoginClick(event) {
+            event.preventDefault();
 
-<script>
-    function handleLoginClick(event) {
-        event.preventDefault();
+            var username = $('#username').val();
+            var password = $('#password').val();
 
-        var username = $('#username').val();
-        var password = $('#password').val();
+            if (!username || !password) {
+                alert("Please enter both username and password.");
+                return;
+            }
 
-        if (!username || !password) {
-            alert("Please enter both username and password.");
-            return;
+            $.ajax({
+                type: 'POST',
+                url: '/Account/Login',
+                data: { username: username, password: password },
+                success: function (response) {
+                    if (response.success) {
+                        window.location.href = '/Home/Index';
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function () {
+                    alert("An error occurred while processing your request. Please try again.");
+                }
+            });
         }
 
-        $.ajax({
-            type: 'POST',
-            url: '/Account/Login', // استخدم الرابط مباشر أو بدّل بـ Razor لو ضروري
-            data: { username: username, password: password },
-            success: function (response) {
-                if (response.success) {
-                    window.location.href = '/Home/Index'; // نفس الشيء، استخدم Razor لو حبيت
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function () {
-                alert("An error occurred while processing your request. Please try again.");
+        document.getElementById('password').addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                handleLoginClick(event);
             }
         });
-    }
-
-    document.getElementById('password').addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            handleLoginClick(event);
-        }
-    });
-</script>
-
+    </script>
+</body>
+</html>

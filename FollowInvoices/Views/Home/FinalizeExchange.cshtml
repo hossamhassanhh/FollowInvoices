@@ -9,7 +9,7 @@
         <label>رقم الفاتورة</label>
         <div class="div-container">
             <div class="dropdown">
-                <input type="text" id="searchBox" placeholder="بحث..." onclick="toggleDropdown()" onkeyup="filterOptions()">
+                <input type="text" id="searchBox" placeholder="بحث..." onclick="toggleDropdown()" onkeyup="filterOptions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="dropdown-content" id="dropdownContent"></div>
             </div>
             <button class="btn" onclick="updateInvoiceData()">استعلام</button>
@@ -20,7 +20,7 @@
         <select id="employee-name" disabled>
             <option value="" selected></option>
             <option value="خالد يوسف">خالد يوسف</option>
-            <option value="محمد المانع">محمد المانع</option>
+            <option value="محمد الهاكع">محمد الهاكع</option>
             <option value="الشيماء ابوبكر">الشيماء ابوبكر</option>
             <option value="مني شاهين">مني شاهين</option>
             <option value="ريهام الشيح">ريهام الشيح</option>
@@ -49,25 +49,18 @@
                 <option value="" selected></option>
                 <option value="تسويات">تسويات</option>
                 <option value="المصرفية">المصرفية</option>
-                <option value="الحسابات">الحسابات</option>
-                <option value="دفعة مقدمة">دفعة مقدمة</option>
-                <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
-                <option value="فاتورة">فاتورة</option>
-                <option value="رد تأمين">رد تأمين</option>
-                <option value="تسوية دفعة">تسوية دفعة</option>
-                <option value="استعاضة">استعاضة</option>
-                <option value="ايجار">ايجار</option>
-                <option value="سلفة مؤقتة">سلفة مؤقتة</option>
-                <option value="سلفة مستديمة">سلفة مستديمة</option>
-                <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
-                <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
+                <option value="الحسابات">الحسابات</option>                
             </select>
-            <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button>
+            @* <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button> *@
         </div>        
     </div>
     <div class="input-wrapper">
+        <label>تاريخ انهاء الصرف</label>
+        <input type="date" id="finalize-exchange-date" required>
+    </div>
+    <div class="input-wrapper">
         <label>المبلغ</label>
-        <input type="text" id="invoice-value">
+        <input type="text" id="invoice-value" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="input-wrapper">
         <label for="currency">العملة</label>
@@ -82,7 +75,7 @@
             <option value="ین يابانی">ین يابانی</option>
         </select>
     </div>
-    <div class="input-wrapper">
+    @* <div class="input-wrapper">
         <label for="back-to-requester">ارجاع الي الجهة الطالبة</label>
         <select id="back-to-requester" required>
             <option value="" selected></option>
@@ -94,11 +87,11 @@
     <div class="input-wrapper" id="to-requester-div" style="display: none;">
         <label>تاريخ الارسال للجهة الطالبة</label>
         <input class="input" type="date" id="to-requester-date" lang="ar">
-    </div>
-    <div class="button-container">
-        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
-        <button class="custom-btn" onclick="RedirectToFinalizeExchangeAction()">تعديل</button>
+    </div> *@
+    <div class="button-container">                
         <button class="custom-btn" onclick="RedirectToFinalizeExchangeAction()">تنفيذ</button>
+        <button class="custom-btn" onclick="RedirectToFinalizeExchangeAction()">تعديل</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
 
@@ -251,11 +244,13 @@
         let vendorName = getElementValue('vendor-dropdown');
         let invoiceNumbers = document.getElementById('searchBox').value;
         let exchangeCase = getElementValue('exchange-case');
+        let finalizeExchangeDate = getElementValue('finalize-exchange-date');
 
         let url = '@Url.Action("ExecuteFinalizeExchange", "Home")' +
             '?vendorName=' + encodeURIComponent(vendorName) +
             '&invoiceNumbers=' + encodeURIComponent(invoiceNumbers) +
-            '&exchangeCase=' + encodeURIComponent(exchangeCase);
+            '&exchangeCase=' + encodeURIComponent(exchangeCase) +
+            '&finalizeExchangeDate=' + encodeURIComponent(finalizeExchangeDate);
 
         window.location.href = url;
     }

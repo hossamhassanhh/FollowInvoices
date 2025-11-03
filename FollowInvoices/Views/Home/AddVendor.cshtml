@@ -1,13 +1,33 @@
-﻿<div class="form-container">
+﻿@using System.Linq
+@model List<FollowInvoices.Controllers.HomeController.Vendor>
+<div class="form-container">
     <div class="input-wrapper">
         <label>اسم المورد</label>
-        <input type="text" id="vendor-name" required>
+        <input type="text" id="vendor-name" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="RedirectToExecuteAddVendorAction()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
-<div class="button-container">
-    <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
-    <button class="custom-btn" onclick="RedirectToExecuteAddVendorAction()">تنفيذ</button>
-</div>
+
+@if (Model != null && Model.Any())
+{
+    <h3 class="vendor-title">قائمة الموردين</h3>
+    <div class="vendor-list">
+        @foreach (var vendor in Model)
+        {
+            <div class="vendor-card">
+                <div class="vendor-icon">🏷️</div>
+                <div class="vendor-name">@vendor.VendorName</div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="no-vendors">لا توجد بيانات موردين حاليًا</div>
+}
 
 <script src="/js/jquery-3.7.1.min.js"></script>
 
@@ -19,9 +39,62 @@
 
     function RedirectToExecuteAddVendorAction() {
         var vendor_name = document.getElementById('vendor-name').value;
+        if (!vendor_name.trim()) {
+            alert('يرجى إدخال اسم المورد أولاً');
+            return;
+        }
 
         var url = '@Url.Action("ExecuteAddVendor", "Home")' +
             '?vendor_name=' + encodeURIComponent(vendor_name);
         window.location.href = url;
     }
 </script>
+
+<style>    
+    .vendor-title {
+        text-align: center;
+        margin-top: 40px;
+        font-weight: bold;
+        color: #0078d7;
+    }
+
+    .vendor-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin: 20px;
+    }
+
+    .vendor-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        text-align: center;
+        transition: transform 0.25s, box-shadow 0.25s;
+        cursor: pointer;
+    }
+
+    .vendor-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+
+    .vendor-icon {
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+
+    .vendor-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .no-vendors {
+        text-align: center;
+        margin-top: 30px;
+        color: #888;
+        font-style: italic;
+    }
+</style>

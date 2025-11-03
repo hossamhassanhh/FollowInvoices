@@ -4,8 +4,9 @@
         <input class="input" type="date" id="invoice-receipt-date" lang="ar" required>
     </div>
     <div class="button-container">
-        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
         <button class="custom-btn" onclick="FilterByInvoiceReceiptDateReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
 
@@ -36,6 +37,11 @@
     }
     function GoToQueryMainPage() {
         var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        // Redirect to the URL
         window.location.href = url;
     }
     function FilterByInvoiceReceiptDateReport() {

@@ -1,11 +1,49 @@
-﻿<div class="form-container">
+﻿<style>
+    .custom-select-container {
+        position: relative;
+        width: 100%;
+        direction: rtl;
+        text-align: right;
+    }
+
+    .search-box {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    .options-list {
+        position: absolute;
+        z-index: 10;
+        width: 100%;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-top: none;
+        display: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+        .options-list div {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+            .options-list div:hover {
+                background-color: #f2f2f2;
+            }
+</style>
+<div class="form-container">
     <div class="input-wrapper">
         <label>اسم المستخدم</label>
         <input type="text" id="user-name" value="@User.Identity.Name" disabled/>
     </div>
     <div class="input-wrapper">
         <label>رقم الايزو</label>
-        <input type="text" id="iso-number" value="@ViewBag.NextIsoNumber" oninput="updateInvoiceNumber()"/>
+        <input type="text" id="iso-number" value="@ViewBag.NextIsoNumber" oninput="updateInvoiceNumber()" />
     </div>
     <div class="input-wrapper">
         <label>تاريخ الايزو</label>
@@ -14,20 +52,28 @@
     <div class="input-wrapper">
         <label>رقم الفاتورة</label>
         <div class="div-container">
-            <input type="text" id="invoice-number" required>
+            <input type="text" id="invoice-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
             <button class="btn" onclick="updateInvoiceData()">استعلام</button>
             <button class="btn" onclick="ResetInvoiceData()">ادخال فاتورة جديدة</button>
         </div>
     </div>
-    <div class="input-wrapper">
+    @* <div class="input-wrapper">
         <label>المورد</label>
         <select id="vendor-dropdown" required>
             <option value="">اختر المورد</option>
         </select>
+    </div> *@
+    <div class="input-wrapper">
+        <label>المورد</label>
+        <div class="custom-select-container" id="vendor-container">
+            <input type="text" id="vendorSearch" class="search-box" placeholder="اختر المورد..." readonly required />
+            <div id="vendorOptions" class="options-list"></div>
+        </div>
     </div>
+    
     <div class="input-wrapper">
         <label>مبلغ الفاتورة ١</label>
-        <input type="text" id="invoice-value-1" required>
+        <input type="text" id="invoice-value-1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
     </div>
     <div class="input-wrapper">
         <label for="currency-1">العملة ١</label>
@@ -44,7 +90,7 @@
     </div>
     <div class="input-wrapper">
         <label>مبلغ الفاتورة ٢</label>
-        <input type="text" id="invoice-value-2" required>
+        <input type="text" id="invoice-value-2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
     </div>
     <div class="input-wrapper">
         <label>العملة ٢</label>
@@ -74,7 +120,7 @@
             <option value="العلاقات العامة">العلاقات العامة</option>
             <option value="المشرعات القاهرة">المشرعات القاهرة</option>
             <option value="المشرعات">المشرعات</option>
-            <option value="1 المشرعات">1 المشرعات</option>
+            <option value="المشروعات ١">المشروعات ١</option>
             <option value="الطبية">الطبية</option>
             <option value="الاعمال البحرية">الاعمال البحرية</option>
             <option value="التشغيل والصيانة">التشغيل والصيانة</option>
@@ -91,7 +137,11 @@
             <option value="الجمارك">الجمارك</option>
         </select>
     </div>
-    <div class="input-wrapper">
+    <div class="input-wrapper" id="to-requester-div" style="display: none;">
+        <label>تاريخ الارسال للجهة الطالبة</label>
+        <input class="input" type="date" id="to-requester-date" lang="ar">
+    </div>
+    @* <div class="input-wrapper">
         <label for="back-to-requester">ارجاع الي الجهة الطالبة</label>
         <select id="back-to-requester">
             <option value="" selected></option>
@@ -103,7 +153,7 @@
     <div class="input-wrapper" id="to-requester-div" style="display: none;">
         <label>تاريخ الارسال للجهة الطالبة</label>
         <input class="input" type="date" id="to-requester-date" lang="ar">
-    </div>
+    </div> *@
     <div class="input-wrapper">
         <label for="area">الموقع</label>
         <select id="area" required>
@@ -112,12 +162,13 @@
             <option value="المعدية">المعدية</option>
         </select>
     </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="RedirectToExecuteCreateAction()">تنفيذ</button>
+        <button class="custom-btn" onclick="RedirectToExecuteEditAction()">تعديل</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    </div>
 </div>
-<div class="button-container">
-    <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
-    <button class="custom-btn" onclick="RedirectToExecuteEditAction()">تعديل</button>
-    <button class="custom-btn" onclick="RedirectToExecuteCreateAction()">تنفيذ</button>
-</div>
+
 
 <script src="/js/jquery-3.7.1.min.js"></script>
 
@@ -271,7 +322,10 @@
         var invoiceDate = getElementValue('invoice-date');/* document.getElementById('invoice-date').value; */
         var invoiceReceiptDate = getElementValue('invoice-receipt-date');/* document.getElementById('invoice-receipt-date').value; */
         var requester = getElementValue('requester');/* document.getElementById('requester').value; */
-        var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
+
+        // var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
+        var vendorName = getSelectedVendor();
+
         let backToRequester = document.getElementById('back-to-requester').value;
         let toRequesterDate = document.getElementById('to-requester-date').value;
         let area = document.getElementById('area').value;
@@ -315,9 +369,9 @@
         var invoiceDate = getElementValue('invoice-date');/* document.getElementById('invoice-date').value; */
         var invoiceReceiptDate = getElementValue('invoice-receipt-date');/* document.getElementById('invoice-receipt-date').value; */
         var requester = getElementValue('requester');/* document.getElementById('requester').value; */
-        var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
-        let backToRequester = document.getElementById('back-to-requester').value;
-        let toRequesterDate = document.getElementById('to-requester-date').value;
+        // var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
+        var vendorName = getSelectedVendor();
+        let sendToRequesterDate = document.getElementById('to-requester-date').value;
         let area = document.getElementById('area').value;
 
         var url = '@Url.Action("ExecuteCreate", "Home")' +
@@ -335,8 +389,7 @@
             '&invoiceReceiptDate=' + encodeURIComponent(invoiceReceiptDate) +
             '&requester=' + encodeURIComponent(requester) +
             '&vendorName=' + encodeURIComponent(vendorName) +
-            '&backToRequester=' + encodeURIComponent(backToRequester) +
-            '&toRequesterDate=' + encodeURIComponent(toRequesterDate) +
+            '&sendToRequesterDate=' + encodeURIComponent(sendToRequesterDate) +
             '&area=' + encodeURIComponent(area);
         // '&invoiceValues=' + invoiceValues.join(',') +
         // '&currencies=' + currencies.join(',') +
@@ -495,6 +548,72 @@
                 console.error('Error fetching vendors.');
             }
         });
-    }    
+    }
+        // Global array to hold vendor names
+    let vendorList = [];
+
+    function populateVendorDropdown() {
+        $.ajax({
+            url: '/Home/GetAllVendors',
+            type: 'GET',
+            success: function (vendors) {
+                vendorList = vendors; // Store for filtering
+                setupSearchableVendor(vendorList);
+            },
+            error: function () {
+                console.error('Error fetching vendors.');
+            }
+        });
+    }
+
+    function setupSearchableVendor(vendors) {
+        const vendorSearch = document.getElementById("vendorSearch");
+        const vendorOptions = document.getElementById("vendorOptions");
+
+        // Populate vendor list dynamically
+        function renderVendors(filter = "") {
+            vendorOptions.innerHTML = "";
+            const filtered = vendors.filter(v => v.includes(filter));
+            filtered.forEach(v => {
+                const div = document.createElement("div");
+                div.textContent = v;
+                div.onclick = () => {
+                    vendorSearch.value = v;
+                    vendorSearch.dataset.value = v;
+                    vendorOptions.style.display = "none";
+                    vendorSearch.setAttribute("readonly", true);
+                };
+                vendorOptions.appendChild(div);
+            });
+            vendorOptions.style.display = filtered.length ? "block" : "none";
+        }
+
+        // Show options when clicking input
+        vendorSearch.addEventListener("click", () => {
+            vendorSearch.removeAttribute("readonly");
+            renderVendors();
+            vendorOptions.style.display = "block";
+            vendorSearch.focus();
+        });
+
+        // Filter list as user types
+        vendorSearch.addEventListener("input", (e) => {
+            renderVendors(e.target.value.trim());
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest("#vendor-container")) {
+                vendorOptions.style.display = "none";
+                vendorSearch.setAttribute("readonly", true);
+            }
+        });
+    }
+
+    // Helper to get selected vendor name (to use in your form submission)
+    function getSelectedVendor() {
+        const input = document.getElementById("vendorSearch");
+        return input?.dataset.value || input?.value || "";
+    }
 
 </script>

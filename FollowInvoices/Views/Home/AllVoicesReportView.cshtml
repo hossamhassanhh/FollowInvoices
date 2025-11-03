@@ -1,7 +1,8 @@
 ﻿<div class="form-container">
-    <div class="button-container">
-        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    <div class="button-container">        
         <button class="custom-btn" onclick="AllVoicesReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToReportsPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
 <script src="/js/jquery-3.7.1.min.js"></script>
@@ -14,6 +15,10 @@
     function AllVoicesReport() {
         var url = '@Url.Action("AllVoicesReport", "Home")';
         // Redirect to the URL
+        window.location.href = url;
+    }
+    function GoToReportsPage() {
+        var url = '@Url.Action("Query", "Home")';
         window.location.href = url;
     }
 </script>

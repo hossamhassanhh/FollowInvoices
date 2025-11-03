@@ -7,9 +7,10 @@
             <option value="المعدية">المعدية</option>
         </select>
     </div>
-    <div class="button-container">
-        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
+    <div class="button-container">        
         <button class="custom-btn" onclick="FilterByAreaReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
 
@@ -47,6 +48,11 @@
         var url = '@Url.Action("FilterByAreaReport", "Home")' +
             '?id=' + encodeURIComponent(id);
 
+        // Redirect to the URL
+        window.location.href = url;
+    }
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
         // Redirect to the URL
         window.location.href = url;
     }

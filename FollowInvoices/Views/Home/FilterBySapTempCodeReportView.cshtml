@@ -4,8 +4,9 @@
         <input type="text" id="id" required>
     </div>
     <div class="button-container">
-        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع</button>
         <button class="custom-btn" onclick="FilterBySapTempCodeReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
 
@@ -14,6 +15,11 @@
 <script type="text/javascript">
     function GoToQueryMainPage() {
         var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        // Redirect to the URL
         window.location.href = url;
     }
     function FilterBySapTempCodeReport() {

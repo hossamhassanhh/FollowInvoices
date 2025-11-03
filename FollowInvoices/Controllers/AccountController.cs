@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using FollowInvoices.Utilities;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Data.SqlClient;
 using System.Security.Claims;
 
@@ -19,57 +21,64 @@ namespace FollowInvoices.Controllers
             { "Walid", "Walid@123" }
         };
 
-		//public IActionResult Login()
-		//{
-		//    return View();
-		//}
+        //public IActionResult Login()
+        //{
+        //    return View();
+        //}
 
-		//[HttpPost]
-		//public async Task<JsonResult> Login(string username, string password)
-		//{
-		//    // Validate input
-		//    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-		//    {
-		//        return Json(new { success = false, message = ".اسم المستخدم و الرقم السري مطلوبان" });
-		//    }
+        //[HttpPost]
+        //public async Task<JsonResult> Login(string username, string password)
+        //{
+        //    // Validate input
+        //    if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        //    {
+        //        return Json(new { success = false, message = ".اسم المستخدم و الرقم السري مطلوبان" });
+        //    }
 
-		//    // Check user credentials
-		//    if (_users.TryGetValue(username, out var storedPassword) && storedPassword == password)
-		//    {
-		//        // Create claims for the authenticated user
-		//        var claims = new List<Claim>
-		//        {
-		//            new Claim(ClaimTypes.Name, username),
-		//            new Claim(ClaimTypes.Role, "User") // Example role claim
-		//        };
+        //    // Check user credentials
+        //    if (_users.TryGetValue(username, out var storedPassword) && storedPassword == password)
+        //    {
+        //        // Create claims for the authenticated user
+        //        var claims = new List<Claim>
+        //        {
+        //            new Claim(ClaimTypes.Name, username),
+        //            new Claim(ClaimTypes.Role, "User") // Example role claim
+        //        };
 
-		//        // Create the identity and principal for cookie authentication
-		//        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-		//        var principal = new ClaimsPrincipal(identity);
+        //        // Create the identity and principal for cookie authentication
+        //        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        //        var principal = new ClaimsPrincipal(identity);
 
-		//        // Sign in the user
-		//        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        //        // Sign in the user
+        //        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-		//        return Json(new { success = true });
-		//    }
+        //        return Json(new { success = true });
+        //    }
 
-		//    return Json(new { success = false, message = "بيانات الدخول غير صحيحة." });
-		//}
+        //    return Json(new { success = false, message = "بيانات الدخول غير صحيحة." });
+        //}
 
-		//public async Task<IActionResult> Logout()
-		//{
-		//    // Clear any session data if necessary
-		//    HttpContext.Session.Clear();
+        //public async Task<IActionResult> Logout()
+        //{
+        //    // Clear any session data if necessary
+        //    HttpContext.Session.Clear();
 
-		//    // Sign the user out from cookie-based authentication
-		//    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        //    // Sign the user out from cookie-based authentication
+        //    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-		//    // Redirect the user to the Login page
-		//    return RedirectToAction("Login", "Account");
-		//}
+        //    // Redirect the user to the Login page
+        //    return RedirectToAction("Login", "Account");
+        //}
 
-		private readonly string connectionString = "Data Source=(local);Initial Catalog=FollowInvoices;Integrated Security=True;";
-		public IActionResult Login()
+        //private readonly string _connectionString = "Data Source=localhost\\SQLEXPRESS;Initial Catalog=FollowInvoices;Integrated Security=True;";
+        private readonly IConfiguration _configuration;
+        private readonly string _connectionString;
+        public AccountController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+            _connectionString = _configuration.GetConnectionString("DefaultConnection");
+        }
+        public IActionResult Login()
 		{
 			return View();
 		}
@@ -85,10 +94,10 @@ namespace FollowInvoices.Controllers
 				return Json(new { success = false, message = "اسم المستخدم والرقم السري مطلوبان." });
 			}
 
-			using (var conn = new SqlConnection(connectionString))
+			using (var conn = new SqlConnection(_connectionString))
 			{
 				conn.Open();
-				Console.WriteLine("connected to " + connectionString);
+				Console.WriteLine("connected to " + _connectionString);
 				var cmd = new SqlCommand("SELECT * FROM Users WHERE Username = @username AND PasswordHash = @password", conn);
 				cmd.Parameters.AddWithValue("@username", username);
 				cmd.Parameters.AddWithValue("@password", password); // ملاحظة: يفضل تستخدم التشفير لاحقًا
@@ -135,7 +144,7 @@ namespace FollowInvoices.Controllers
 				return Json(new { success = false, message = "يجب تسجيل الدخول أولاً." });
 			}
 
-			using (SqlConnection conn = new SqlConnection(connectionString))
+			using (SqlConnection conn = new SqlConnection(_connectionString))
 			{
 				await conn.OpenAsync();
 				var command = new SqlCommand("SELECT PasswordHash FROM Users WHERE Username = @username", conn);

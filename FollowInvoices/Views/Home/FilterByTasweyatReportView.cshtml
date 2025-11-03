@@ -1,26 +1,5 @@
 ﻿<div class="form-container">
-    <div class="input-wrapper">
-        <label for="exchange-case">اختر حالة الصرف</label>
-        <div class="div-container">
-            <select id="exchange-case" required>
-                <option value="" selected></option>
-                <option value="تسويات">تسويات</option>
-                <option value="المصرفية">المصرفية</option>
-                <option value="الحسابات">الحسابات</option>
-                <option value="دفعة مقدمة">دفعة مقدمة</option>
-                <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
-                <option value="فاتورة">فاتورة</option>
-                <option value="رد تأمين">رد تأمين</option>
-                <option value="تسوية دفعة">تسوية دفعة</option>
-                <option value="استعاضة">استعاضة</option>
-                <option value="ايجار">ايجار</option>
-                <option value="سلفة مؤقتة">سلفة مؤقتة</option>
-                <option value="سلفة مستديمة">سلفة مستديمة</option>
-                <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
-                <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
-            </select>
-            <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button>
-        </div>
+    <div class="input-wrapper">        
         <div class="input-wrapper">
             <label>التاريخ</label>
             <input class="input" type="date" id="date" lang="ar" required>
@@ -28,7 +7,7 @@
     </div>
     <div class="button-container">
         <button class="custom-btn" onclick="FilterByExchangeCaseWithDateReport()">تنفيذ</button>
-        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي شاشة تسليم القيود</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>
@@ -84,7 +63,7 @@
         }
     }
     function GoToQueryMainPage() {
-        var url = '@Url.Action("Query", "Home")';
+        var url = '@Url.Action("LastStep", "Home")';
         window.location.href = url;
     }
     function GoToHomePage() {
@@ -100,9 +79,8 @@
         
         console.log(date);
 
-        var url = '@Url.Action("FilterByExchangeCaseWithDateReport", "Home")' +
-            '?id=' + encodeURIComponent(id) +
-            '&date=' + encodeURIComponent(date);
+        var url = '@Url.Action("FilterByTasweyatReport", "Home")' +
+            '?date=' + encodeURIComponent(date);
 
         // Redirect to the URL
         window.location.href = url;

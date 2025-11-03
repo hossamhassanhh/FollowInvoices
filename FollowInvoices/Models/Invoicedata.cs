@@ -9,6 +9,6 @@
         public  string toRequesterDate { get; set; }
         public  string area { get; set; }
         public  string invoiceEntree { get; set; }
-        public  int invoiceExchangeValue { get; set; }
+        public  decimal invoiceExchangeValue { get; set; }
 }
 }

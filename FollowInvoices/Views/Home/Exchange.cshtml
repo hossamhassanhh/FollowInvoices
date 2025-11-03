@@ -9,7 +9,7 @@
         <label>رقم الفاتورة</label>
         <div class="div-container">
             <div class="dropdown">
-                <input type="text" id="searchBox" placeholder="بحث..." onclick="toggleDropdown()" onkeyup="filterOptions()">
+                <input type="text" id="searchBox" placeholder="بحث..." onclick="toggleDropdown()" onkeyup="filterOptions()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                 <div class="dropdown-content" id="dropdownContent"></div>
             </div>
             <button class="btn" onclick="updateInvoiceData()">استعلام</button>
@@ -20,7 +20,7 @@
         <select id="employee-name" required>
             <option value="" selected></option>
             <option value="خالد يوسف">خالد يوسف</option>
-            <option value="محمد المانع">محمد المانع</option>
+            <option value="محمد الهاكع">محمد الهاكع</option>
             <option value="الشيماء ابوبكر">الشيماء ابوبكر</option>
             <option value="مني شاهين">مني شاهين</option>
             <option value="ريهام الشيح">ريهام الشيح</option>
@@ -43,8 +43,31 @@
         <input type="text" id="exchange-number" value="@ViewBag.NextExchangeNumber" disabled>
     </div>
     <div class="input-wrapper">
+        <label for="exchange-case">اختر حالة الصرف</label>
+        <div class="div-container">
+            <select id="exchange-case" required>
+                <option value="" selected></option>
+                <option value="تسويات">تسويات</option>
+                <option value="المصرفية">المصرفية</option>
+                <option value="الحسابات">الحسابات</option>
+                <option value="دفعة مقدمة">دفعة مقدمة</option>
+                <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
+                <option value="فاتورة">فاتورة</option>
+                <option value="رد تأمين">رد تأمين</option>
+                <option value="تسوية دفعة">تسوية دفعة</option>
+                <option value="استعاضة">استعاضة</option>
+                <option value="ايجار">ايجار</option>
+                <option value="سلفة مؤقتة">سلفة مؤقتة</option>
+                <option value="سلفة مستديمة">سلفة مستديمة</option>
+                <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
+                <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
+            </select>
+            @* <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button> *@
+        </div>
+    </div>
+    <div class="input-wrapper">
         <label>مبلغ طلب الصرف</label>
-        <input type="text" id="invoice-value" required>
+        <input type="text" id="invoice-value" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
     </div>
     <div class="input-wrapper">
         <label for="currency">العملة</label>
@@ -68,7 +91,7 @@
         </select>
     </div>
     <div class="input-wrapper" id="to-requester-div" style="display: none;">
-        <label>تاريخ الارسال للجهة الطالبة</label>
+        <label>تاريخ الارجاع للجهة الطالبة</label>
         <input class="input" type="date" id="to-requester-date" lang="ar">
     </div>
 
@@ -82,9 +105,9 @@
         <input class="input" type="text" id="invoice-entree" lang="ar" disabled>
     </div>
     <div class="button-container">
-        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
-        <button class="custom-btn" onclick="RedirectToExecuteExchangeAction()">تعديل</button>
         <button class="custom-btn" onclick="RedirectToExecuteExchangeAction()">تنفيذ</button>
+        <button class="custom-btn" onclick="RedirectToExecuteExchangeAction()">تعديل</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>                
     </div>
 </div>
 
@@ -290,6 +313,7 @@
         let vendorName = getElementValue('vendor-dropdown');
         let invoiceNumbers = document.getElementById('searchBox').value;
         let exchangeNumber = document.getElementById('exchange-number').value;
+        let exchangeCase = getElementValue('exchange-case');
         let employeeName = document.getElementById('employee-name').value;
         let invoiceValue = document.getElementById('invoice-value').value;
         let currency = document.getElementById('currency').value;
@@ -300,6 +324,7 @@
             '?vendorName=' + encodeURIComponent(vendorName) +
             '&invoiceNumbers=' + encodeURIComponent(invoiceNumbers) +
             '&exchangeNumber=' + encodeURIComponent(exchangeNumber) +
+            '&exchangeCase=' + encodeURIComponent(exchangeCase) +
             '&employeeName=' + encodeURIComponent(employeeName) +
             '&invoiceValue=' + encodeURIComponent(invoiceValue) +
             '&currency=' + encodeURIComponent(currency) +

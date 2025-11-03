@@ -1,0 +1,192 @@
+﻿<div class="reports-container">
+    <h2>شاشة تسليم القيود</h2>
+
+    <div class="reports-grid">
+        <a href="@Url.Action("FilterByTasweyatReportView", "Home")" class="report-card">
+            <span>⚖️</span>
+            <p>تسويات</p>
+        </a>
+
+        <a href="@Url.Action("FilterBy7sabatReportView", "Home")" class="report-card">
+            <span>📚</span>
+            <p>حسابات</p>
+        </a>
+
+        <a href="@Url.Action("FilterByMasrafyaReportView", "Home")" class="report-card">
+            <span>🏦</span>
+            <p>مصرفية</p>
+        </a>
+    </div>
+
+    <div class="button-container">
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلى القائمة الرئيسية</button>
+    </div>
+</div>
+
+<style>
+    /* === Base Layout === */
+    .reports-container {
+        direction: rtl;
+        text-align: center;
+        padding: 40px 20px;
+        font-family: "Cairo", sans-serif;
+        background: linear-gradient(135deg, #f8faff, #e9f5ff);
+        min-height: 100vh;        
+    }
+
+        .reports-container h2 {
+            color: #003459;
+            font-size: 2rem;
+            margin-bottom: 35px;
+            /* border-bottom: 3px solid #0077b6; */
+            display: inline-block;
+            padding-bottom: 8px;
+            letter-spacing: 1px;
+            /* animation: fadeInSlide 1s ease-in-out; */
+            transition: all 0.3s ease;
+            animation: spinIn 2.5s ease-in-out;
+            animation-delay: 0.2s;
+            /* opacity: 0; */
+            animation-fill-mode: forwards;
+            /* animation: spark 2.5s ease-in-out infinite; */
+        }
+    /* --- Spin Animation --- */
+    @@keyframes spinIn {
+        0%
+
+    {
+        opacity: 0;
+        transform: rotateY(90deg) scale(0.8);
+    }
+
+    60% {
+        opacity: 0.6;
+        transform: rotateY(-10deg) scale(1.05);
+    }
+
+    100% {
+        opacity: 1;
+        transform: rotateY(0deg) scale(1);
+    }
+
+    }
+    /* --- Spark Animation --- */
+    @@keyframes spark {
+        0%
+
+    {
+        text-shadow: 0 0 2px #fff, 0 0 5px #6dd5fa, 0 0 10px #2980b9;
+    }
+
+    50% {
+        text-shadow: 0 0 10px #fff, 0 0 20px #6dd5fa, 0 0 30px #2980b9;
+    }
+
+    100% {
+        text-shadow: 0 0 2px #fff, 0 0 5px #6dd5fa, 0 0 10px #2980b9;
+    }
+
+    }
+    /* === Grid of Cards === */
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 25px;
+        margin: 0 auto 40px;
+        max-width: 800px;
+    }
+
+    .report-card {
+        background-color: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 6px 14px rgba(0, 119, 182, 0.1);
+        text-decoration: none;
+        color: #003459;
+        font-size: 1.1rem;
+        padding: 30px 15px;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+    }
+
+        .report-card span {
+            font-size: 2.4rem;
+            margin-bottom: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, #0077b6, #0096c7);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(0, 119, 182, 0.25);
+        }
+
+            .report-card:hover span {
+                transform: scale(1.2) rotate(5deg);
+            }
+
+    /* === Button Container === */
+    .button-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    /* === Custom Button === */
+    /* .custom-btn {
+        background: linear-gradient(135deg, #0077b6, #00b4d8);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 28px;
+        font-size: 1.05rem;
+        font-weight: bold;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 119, 182, 0.3);
+        width: fit-content;
+    }
+
+        /* Ripple Effect */
+        .custom-btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+            opacity: 0;
+        }
+
+        .custom-btn:hover::after {
+            width: 220%;
+            height: 550%;
+            opacity: 0;
+        }
+
+        .custom-btn:hover {
+            background: linear-gradient(135deg, #0096c7, #00b4d8);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 18px rgba(0, 119, 182, 0.4);
+        }
+
+        .custom-btn:active {
+            transform: scale(0.97);
+        } */
+</style>
+
+<script type="text/javascript">
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        window.location.href = url;
+    }
+</script>

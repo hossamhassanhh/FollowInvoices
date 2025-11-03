@@ -27,6 +27,7 @@
 	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
 	  <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="7.0.8" />
 	  <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
+	  <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
 	  <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
   </ItemGroup>
 </Project>

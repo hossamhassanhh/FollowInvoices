@@ -1,6 +1,109 @@
 ﻿@{
     // Cast the ViewBag data to a DataTable
     System.Data.DataTable dataTable = ViewBag.DataTable;
+
+    // Determine which columns have at least one non-empty/non-null value
+    var visibleColumns = new List<System.Data.DataColumn>();
+    if (dataTable != null)
+    {
+        foreach (System.Data.DataColumn col in dataTable.Columns)
+        {
+            bool hasValue = false;
+            foreach (System.Data.DataRow row in dataTable.Rows)
+            {
+                var cellValue = row[col];
+                if (cellValue != DBNull.Value && !string.IsNullOrWhiteSpace(cellValue?.ToString()))
+                {
+                    hasValue = true;
+                    break;
+                }
+            }
+            if (hasValue)
+            {
+                visibleColumns.Add(col);
+            }
+        }
+    }
+    // Function to convert English digits to Arabic digits
+    string ToArabicDigits(object input)
+    {
+        if (input == null || input == DBNull.Value)
+            return string.Empty;
+
+        string text = input.ToString().Trim();
+        if (string.IsNullOrEmpty(text) || text == "null")
+            return string.Empty;
+
+        var cultureAr = new System.Globalization.CultureInfo("ar-EG");
+        var cultureEn = System.Globalization.CultureInfo.InvariantCulture;
+
+        // 1️⃣ Check if numeric (decimal or integer)
+        if (decimal.TryParse(text, System.Globalization.NumberStyles.Any, cultureEn, out decimal numberValue))
+        {
+            string numText = numberValue.ToString(cultureEn);
+            var arabicDigits = new[] { '٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩' };
+            var sb = new System.Text.StringBuilder();
+
+            foreach (char c in numText)
+            {
+                if (char.IsDigit(c))
+                    sb.Append(arabicDigits[c - '0']);
+                else if (c == '.')
+                    sb.Append('٫'); // Arabic decimal separator
+                else if (c == ',')
+                    sb.Append('٬'); // Arabic thousands separator
+                else
+                    sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+
+        // 2️⃣ Check if it's a DateTime (Arabic or English)
+        DateTime dateValue;
+        bool isDate =
+            DateTime.TryParse(text, cultureEn, System.Globalization.DateTimeStyles.None, out dateValue) ||
+            DateTime.TryParse(text, cultureAr, System.Globalization.DateTimeStyles.None, out dateValue);
+
+        if (isDate)
+        {
+            // Format date formally in Egyptian Arabic
+            string formattedDate = dateValue.ToString("dddd، dd MMMM yyyy", cultureAr);
+
+            // Convert digits to Arabic-Indic
+            var arabicDigits = new[] { '٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩' };
+            var sb = new System.Text.StringBuilder();
+
+            foreach (char c in formattedDate)
+            {
+                if (char.IsDigit(c))
+                    sb.Append(arabicDigits[c - '0']);
+                else
+                    sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+
+        // 3️⃣ Otherwise return text as is
+        else
+        {
+            string cultureText = text.ToString(cultureEn);
+            var arabicDigits = new[] { '٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩' };
+            var sb = new System.Text.StringBuilder();
+
+            foreach (char c in cultureText)
+            {
+                if (char.IsDigit(c) && !arabicDigits.Contains(c))
+                    sb.Append(arabicDigits[c - '0']);
+                else
+                    sb.Append(c);
+            }
+
+            return sb.ToString();
+        }
+    }
+
 }
 
 <!DOCTYPE html>
@@ -11,16 +114,15 @@
     <script src="/js/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Display Table within the table container -->
     <div class="table-container">
-        @if (dataTable != null && dataTable.Rows.Count > 0)
+        @if (dataTable != null && dataTable.Rows.Count > 0 && visibleColumns.Count > 0)
         {
             <table id="dataTable">
                 <thead>
                     <tr>
-                        @for (int i = dataTable.Columns.Count - 1; i >= 0; i--)
+                        @foreach (var col in visibleColumns.AsEnumerable().Reverse())
                         {
-                            <th>@dataTable.Columns[i].ColumnName</th>
+                            <th>@col.ColumnName</th>
                         }
                     </tr>
                 </thead>
@@ -28,9 +130,9 @@
                     @foreach (System.Data.DataRow row in dataTable.Rows)
                     {
                         <tr>
-                            @foreach (var cellIndex in Enumerable.Range(0, row.ItemArray.Length).Reverse())
+                            @foreach (var col in visibleColumns.AsEnumerable().Reverse())
                             {
-                                <td>@row.ItemArray[cellIndex]</td>
+                                <td>@Html.Raw(ToArabicDigits(row[col]))</td>
                             }
                         </tr>
                     }
@@ -43,71 +145,20 @@
         }
     </div>
 
-    <!-- Buttons for Print, PDF, and Excel Export -->
-    <div class="button-container">
+    <div class="button-container" style="margin-bottom: 20px;">
         <button class="custom-btn" onclick="printTable()">طباعة الجدول</button>
-        @* <button class="custom-btn" onclick="exportPDF()">تصدير كـ PDF</button> *@
         <button class="custom-btn" onclick="exportExcel()">تصدير كـ Excel</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 
     <script>
-
         function GoToHomePage() {
-        var url = '@Url.Action("Index", "Home")';
-        window.location.href = url;
-    }
+            var url = '@Url.Action("Index", "Home")';
+            window.location.href = url;
+        }
 
         function printTable() {
             window.print();
-        }
-
-        function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF("p", "pt", "a4");
-
-            if (typeof doc.autoTable !== 'function') {
-                console.error("autoTable plugin could not be initialized.");
-                return;
-            }
-
-            doc.text("Exported Table Data", 40, 30, { align: 'right' });
-            doc.setFontSize(12);
-
-            const data = [];
-            const table = document.getElementById("dataTable");
-
-            for (let row of table.rows) {
-                const rowData = [];
-                for (let cell of row.cells) {
-                    rowData.push(cell.innerText);
-                }
-                data.push(rowData);
-            }
-
-            doc.autoTable({
-                head: [data[0]],           // Set header row
-                body: data.slice(1),       // Set data rows
-                theme: 'grid',
-                startY: 50,
-                styles: {
-                    font: 'courier',
-                    halign: 'right',
-                    fontStyle: 'bold'
-                },
-                margin: { top: 50, bottom: 30, left: 20, right: 20 },
-                tableWidth: 'auto',
-                bodyStyles: {
-                    cellPadding: 4,
-                },
-                didDrawPage: (data) => {
-                    doc.setFontSize(10);
-                    doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
-                },
-                pageBreak: 'auto'
-            });
-
-            doc.save("table-data.pdf");
         }
 
         function exportExcel() {
@@ -125,7 +176,6 @@
 
             const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
             XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
             XLSX.writeFile(workbook, "table-data.xlsx");
         }
     </script>
