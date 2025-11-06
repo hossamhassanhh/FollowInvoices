@@ -1,233 +1,234 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html class="html" lang="ar-EG" dir="rtl">
 <head>
-	<meta charset="UTF-8">	
-	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-	<meta http-equiv="Pragma" content="no-cache">
-	<meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
-<style>
-	.pt-module-content.pt-link {
-		display: block;
-	}
-</style>
-<meta name="viewport" content="width=device-width, initial-scale=1">	
-	<title>Home - Follow Invoices</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home - Follow Invoices</title>
 
-	<link rel='stylesheet' id='wp-block-library-css' href='/css/styles.css' media='all' />
+    <link rel='stylesheet' id='wp-block-library-css' href='/css/styles.css' media='all' />
 
-	
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f9fb;
+            color: #222;
+        }
+
+        #site-header {
+            padding: 10px 20px;
+            background-color: inherit;
+        }
+
+        #site-logo img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        h2 {
+            margin: 10px 0;
+            color: inherit;
+            font-size: 1.4rem;
+            text-align: center;
+        }
+
+        .user-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: center;
+            background: inherit;
+            color: inherit;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            font-size: medium;
+            animation: fadeInSlide 1s ease-in-out;
+            gap: 10px;
+        }
+
+        .welcome {
+            padding-left: 10px;
+            font-weight: bold;
+            color: inherit;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-in forwards;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: inherit;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-in forwards;
+            animation-delay: 0.3s;
+        }
+
+        .nav-link:hover {
+            color: orangered;
+            text-shadow: 0 0 8px #bbe1fa;
+            transform: translateY(-2px);
+        }
+
+        footer {
+            background-color: inherit;
+            color: inherit;
+            text-align: center;
+            padding: 20px 10px;
+            margin-top: 30px;
+            font-size: 0.9rem;
+        }
+
+        b {
+            color: stealblue;
+        }
+
+        /* === Animations === */
+        @@keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @@keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* === RESPONSIVE DESIGN === */
+        @@media (max-width: 992px) {
+            #site-header {
+                text-align: center;
+            }
+
+            h2 {
+                text-align: center;
+                font-size: 1.2rem;
+            }
+
+            .user-bar {
+                justify-content: center;
+                flex-direction: row;
+                text-align: center;
+                font-size: 0.95rem;
+                padding: 10px;
+            }
+
+            #site-logo img {
+                max-width: 150px;
+            }
+        }
+
+        @@media (max-width: 600px) {
+            #site-header {
+                padding: 10px;
+            }
+
+            #site-logo img {
+                max-width: 130px;
+            }
+
+            .user-bar {
+                flex-direction: column;
+                align-items: center;
+                box-shadow: none;
+                gap: 6px;
+            }
+
+            .welcome {
+                padding-left: 0;
+                font-size: 0.9rem;
+            }
+
+            .nav-link {
+                padding: 5px 8px;
+                font-size: 0.9rem;
+            }
+
+            footer {
+                font-size: 0.8rem;
+                padding: 15px 5px;
+            }
+
+            b {
+                font-size: large !important;
+            }
+        }
+    </style>
 </head>
 
 <body>
-	
-	<div id="outer-wrap" class="site clr">
+    <div id="outer-wrap" class="site clr">
+        <div id="wrap" class="clr">
+            <header id="site-header">
+                <div>
+                    <div>
+                        <div>
+                            <div>
+                                <div id="site-logo">
+                                    <div id="site-logo-inner">
+                                        <a href="#" class="custom-logo-link" rel="home" aria-current="page">
+                                            <img width="670" height="404" src="/Images/pms-logo.png"
+                                                class="custom-logo" alt="PMS Follow Invoices" decoding="async"
+                                                fetchpriority="high"
+                                                sizes="(max-width: 670px) 100vw, 670px" />
+                                        </a>
+                                    </div>
+                                </div>
 
+                                <h2>شركة خدمات البترول البحرية</h2>
 
+                                <div class="user-bar">
+                                    @if (User.Identity.IsAuthenticated)
+                                    {
+                                        <span class="welcome">مرحباً، @User.Identity.Name!</span>
+                                        <a asp-controller="Account" asp-action="ChangePasswordView" class="nav-link">تغيير
+                                            الرقم السري</a>
+                                        <a asp-controller="Account" asp-action="Logout"
+                                            class="nav-link">تسجيل الخروج</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Account" asp-action="Login"
+                                            class="nav-link">تسجيل الدخول</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
 
-		<div id="wrap" class="clr">
+            @RenderBody()
 
-			<header id="site-header">
-
-	
-		
-
-<div>
-
-	
-		<div>
-			<div>
-				<div>
-
-					
-						<div>
-
-							
-
-<div id="site-logo">
-
-	
-	<div id="site-logo-inner">
-
-		<a href="#" class="custom-logo-link" rel="home" aria-current="page"><img width="670" height="404" src="/Images/pms-logo.png" class="custom-logo" alt="PMS Follow Invoices" decoding="async" fetchpriority="high" sizes="(max-width: 670px) 100vw, 670px" /></a>
-	</div><!-- #site-logo-inner -->
-
-	
-	
-</div><!-- #site-logo -->
-									@* <form class="form-static"> *@
-<h2 action="margin-bottom: 10px;">الادارة العامة لتكنولوجيا المعلومات</h2>
-									@* @if (User.Identity.IsAuthenticated)
-									{
-										<span>مرحباً، @User.Identity.Name!</span>
-										<a asp-controller="Account" asp-action="Logout" class="login">تسجيل الخروج</a>
-									}
-									else
-									{
-										<a asp-controller="Account" asp-action="Login" class="login">تسجيل الدخول</a>
-									}
-									@* </form> *@ 
-									
-									@* <div id="topbar" dir="rtl">
-									</div> *@
-
-									<div class="user-bar">
-										@if (User.Identity.IsAuthenticated)
-										{
-											<span class="welcome">مرحباً، @User.Identity.Name!</span>
-											<a asp-controller="Account" asp-action="ChangePasswordView" class="nav-link">تغيير الرقم السري</a>
-											<a asp-controller="Account" asp-action="Logout" class="nav-link">تسجيل الخروج</a>
-										}
-										else
-										{
-											<a asp-controller="Account" asp-action="Login" class="nav-link">تسجيل الدخول</a>
-										}
-									</div>
-
-									<style>
-										.user-bar {
-											display: flex;
-											justify-content: flex-start;
-											align-items: center;
-											background: inherit;
-											color: inherit;
-											padding: 10px 20px;
-											border-radius: 8px;
-											box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-											font-size: medium;
-											animation: fadeInSlide 1s ease-in-out;
-										}
-
-										.welcome {
-											padding-left: 15px;
-											font-weight: bold;
-											color: inherit;
-											opacity: 0;
-											animation: fadeIn 1.5s ease-in forwards;
-										}
-
-										.nav-link {
-											text-decoration: none;
-											color: inherit;
-											font-weight: bold;
-											padding-left: 15px;
-											transition: all 0.3s ease;
-											opacity: 0;
-											animation: fadeIn 1.5s ease-in forwards;
-											animation-delay: 0.3s;
-										}
-
-											.nav-link:hover {
-												color: orangered;
-												text-shadow: 0 0 8px #bbe1fa;
-												transform: translateY(-2px);
-											}
-
-										@@keyframes fadeInSlide {
-											from
-
-										{
-											opacity: 0;
-											transform: translateY(-10px);
-										}
-
-										to {
-											opacity: 1;
-											transform: translateY(0);
-										}
-
-										}
-
-										@@keyframes fadeIn {
-											to
-
-										{
-											opacity: 1;
-										}
-
-										}
-									</style>
-
-
-						</div>
-
-						
-				</div>
-			</div>
-		</div>
-
-		
-
-</div><!-- #site-header-inner -->
-			
-		
-</header><!-- #site-header -->
-			@RenderBody()<!-- #main -->
-
-	
-	
-	
-		
-<footer id="footer">
-
-	
-	<div id="footer-inner">
-
-		
-
-<div id="footer-widgets">
-
-	
-	<div>
-
-					<div class="footer-box span_1_of_4 col col-1">
-							</div><!-- .footer-one-box -->
-
-							<div class="footer-box span_1_of_4 col col-2">
-									</div><!-- .footer-one-box -->
-				
-							<div class="footer-box span_1_of_4 col col-3 ">
-									</div><!-- .footer-one-box -->
-				
-							<div class="footer-box span_1_of_4 col col-4">
-									</div><!-- .footer-box -->
-				
-			
-	</div><!-- .container -->
-
-	
-</div><!-- #footer-widgets -->
-
-
-
-<div id="footer-bottom" class="clr no-footer-nav">
-
-	
-	<div id="footer-bottom-inner" class="container clr">
-
-		
-		
-			<div id="copyright" class="clr" role="contentinfo">
-				Copyright  2025 - Powered by Eng. Hossam Hassan</div><!-- #copyright -->
-
-			
-	</div><!-- #footer-bottom-inner -->
-
-	
-</div><!-- #footer-bottom -->
-
-
-	</div><!-- #footer-inner -->
-
-	
-</footer><!-- #footer -->
-
-	
-	
-</div><!-- #wrap -->
-
-
-</div><!-- #outer-wrap -->
+            <footer id="footer">
+                <div id="footer-inner">
+                    <div id="footer-bottom" class="clr no-footer-nav">
+                        <div id="footer-bottom-inner" class="container clr">
+                            <div id="copyright" class="clr" role="contentinfo">
+                                Copyright 2025 - Powered by
+                                <b style="font-style: italic; font-family: 'Brush Script MT'; font-size: x-large;">
+                                    Eng. Hossam Hassan
+                                </b>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
 </body>
 </html>
