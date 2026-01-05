@@ -3,11 +3,19 @@
 </div>
 <div class="form-container">
     <div class="input-wrapper">
-        <label>تاريخ استلام الفاتورة</label>
-        <input class="input" type="date" id="invoice-receipt-date" lang="ar" required>
+        <label>تاريخ طلب الصرف</label>
+        <input class="input" type="date" id="date" lang="ar" required>
     </div>
-    <div class="button-container">
-        <button class="custom-btn" onclick="FilterByInvoiceReceiptDateReport()">تنفيذ</button>
+    <div class="input-wrapper">
+        <label for="area">الموقع</label>
+        <select id="area" required>
+            <option value="" selected></option>
+            <option value="الرئيسي">الرئيسي</option>
+            <option value="المعدية">المعدية</option>
+        </select>
+    </div>
+    <div class="button-container">        
+        <button class="custom-btn" onclick="FilterByAreaAndDateReport()">تنفيذ</button>
         <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
@@ -42,16 +50,18 @@
         var url = '@Url.Action("Query", "Home")';
         window.location.href = url;
     }
-    function GoToHomePage() {
-        var url = '@Url.Action("Index", "Home")';
+    function FilterByAreaAndDateReport() {
+        var id = getElementValue("area");
+        var date = getElementValue("date");
+        var url = '@Url.Action("FilterByAreaAndDateReport", "Home")' +
+            '?id=' + encodeURIComponent(id) +
+            '&date=' + encodeURIComponent(date);
+
         // Redirect to the URL
         window.location.href = url;
     }
-    function FilterByInvoiceReceiptDateReport() {
-        var id = getElementValue("invoice-receipt-date");
-        var url = '@Url.Action("FilterByInvoiceReceiptDateReport", "Home")' +
-            '?id=' + encodeURIComponent(id);
-
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
         // Redirect to the URL
         window.location.href = url;
     }

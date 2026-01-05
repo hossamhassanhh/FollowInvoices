@@ -1,41 +1,42 @@
 ﻿<style>
     .custom-select-container {
-        position: relative;
-        width: 100%;
-        direction: rtl;
-        text-align: right;
+    position: relative;
+    width: 100%;
+    direction: rtl;
+    text-align: right;
     }
 
     .search-box {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
     }
 
     .options-list {
-        position: absolute;
-        z-index: 10;
-        width: 100%;
-        max-height: 150px;
-        overflow-y: auto;
-        background-color: #fff;
-        border: 1px solid #ccc;
-        border-top: none;
-        display: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    display: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-        .options-list div {
-            padding: 8px;
-            cursor: pointer;
-        }
+    .options-list div {
+    padding: 8px;
+    cursor: pointer;
+    }
 
-            .options-list div:hover {
-                background-color: #f2f2f2;
-            }
+    .options-list div:hover {
+    background-color: #f2f2f2;
+    }
 </style>
+<h2>اضافة فاتورة</h2>
 <div class="form-container">
     <div class="input-wrapper">
         <label>اسم المستخدم</label>
@@ -43,20 +44,13 @@
     </div>
     <div class="input-wrapper">
         <label>رقم الايزو</label>
-        <input type="text" id="iso-number" value="@ViewBag.NextIsoNumber" oninput="updateInvoiceNumber()" />
+        <input type="text" id="iso-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="@ViewBag.NextIsoNumber" oninput="updateInvoiceNumber()" />
     </div>
     <div class="input-wrapper">
         <label>تاريخ الايزو</label>
         <input type="text" id="iso-date" value="@ViewBag.IsoDate" />
     </div>
-    <div class="input-wrapper">
-        <label>رقم الفاتورة</label>
-        <div class="div-container">
-            <input type="text" id="invoice-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
-            <button class="btn" onclick="updateInvoiceData()">استعلام</button>
-            <button class="btn" onclick="ResetInvoiceData()">ادخال فاتورة جديدة</button>
-        </div>
-    </div>
+
     @* <div class="input-wrapper">
         <label>المورد</label>
         <select id="vendor-dropdown" required>
@@ -66,11 +60,43 @@
     <div class="input-wrapper">
         <label>المورد</label>
         <div class="custom-select-container" id="vendor-container">
-            <input type="text" id="vendorSearch" class="search-box" placeholder="اختر المورد..." readonly required />
-            <div id="vendorOptions" class="options-list"></div>
-        </div>
+            @if (!string.IsNullOrEmpty(ViewBag.VendorName))
+            {
+                <input type="text" id="vendorSearch" value="@ViewBag.VendorName" data-value="@ViewBag.VendorName" disabled required>
+            }
+            else
+            {
+                <input type="text" id="vendorSearch" class="search-box" placeholder="اختر المورد..." readonly required />
+                <div id="vendorOptions" class="options-list"></div>
+            }            
+            
+        </div> 
+        @* @if (!string.IsNullOrEmpty(ViewBag.VendorName))
+        {
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    setElementValue(
+                        "vendorSearch",
+                @Html.Raw(Json.Serialize(ViewBag.VendorName))
+                    );
+                });
+            </script>
+        } *@
+        
     </div>
     
+    <div class="input-wrapper">
+        <label>رقم الفاتورة</label>
+        <div class="div-container">
+            <input type="text" id="invoice-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="unicode-bidi: plaintext;" required>
+            <button class="btn" onclick="updateInvoiceData()">استعلام</button>
+            <button class="btn" onclick="ResetInvoiceData()">ادخال فاتورة جديدة</button>
+        </div>
+    </div>
+    <div class="input-wrapper">
+        <label>رقم امر التوريد</label>
+        <input type="text" id="po-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
     <div class="input-wrapper">
         <label>مبلغ الفاتورة ١</label>
         <input type="text" id="invoice-value-1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
@@ -86,6 +112,7 @@
             <option value="ریال سعودی">ریال سعودی</option>
             <option value="کرونه نرویجی">کرونه نرویجی</option>
             <option value="ین يابانی">ین يابانی</option>
+            <option value="درهم اماراتي">درهم اماراتي</option>
         </select>
     </div>
     <div class="input-wrapper">
@@ -103,6 +130,7 @@
             <option value="ریال سعودی">ریال سعودی</option>
             <option value="کرونه نرویجی">کرونه نرویجی</option>
             <option value="ین يابانی">ین يابانی</option>
+            <option value="درهم اماراتي">درهم اماراتي</option>
         </select>
     </div>
     <div class="input-wrapper">
@@ -117,43 +145,49 @@
         <label>الجهة الطالبة</label>
         <select id="requester" required>
             <option value="" selected></option>
-            <option value="العلاقات العامة">العلاقات العامة</option>
-            <option value="المشرعات القاهرة">المشرعات القاهرة</option>
-            <option value="المشرعات">المشرعات</option>
-            <option value="المشروعات ١">المشروعات ١</option>
-            <option value="الطبية">الطبية</option>
-            <option value="الاعمال البحرية">الاعمال البحرية</option>
-            <option value="التشغيل والصيانة">التشغيل والصيانة</option>
-            <option value="الادارية">الادارية</option>
-            <option value="القانونية">القانونية</option>
-            <option value="منطقة الاسكندرية">منطقة الاسكندرية</option>
-            <option value="المساحة والغطس">المساحة والغطس</option>
-            <option value="تكنولوجيا المعلومات">تكنولوجيا المعلومات</option>
-            <option value="المالية">المالية</option>
-            <option value="الوحدات الديناميكية">الوحدات الديناميكية</option>
-            <option value="الوحدات الغير الديناميكية">الوحدات الغير الديناميكية</option>
-            <option value="التخطيط">التخطيط</option>
-            <option value="المشتريات الاسكندرية">المشتريات الاسكندرية</option>
-            <option value="الجمارك">الجمارك</option>
+            <option value="إدارة العلاقات العامة">إدارة العلاقات العامة</option>
+            <option value="إدارة المشتريات">إدارة المشتريات</option>
+            <option value="إدارة المشروعات">إدارة المشروعات</option>
+            <option value="إدارة المشروعات ١">إدارة المشروعات ١</option>
+            <option value="الادارة الطبية">الادارة الطبية</option>
+            <option value="إدارة التشغيل و الصيانة">إدارة التشغيل و الصيانة</option>
+            <option value="إدارة الشئون الإدارية">إدارة الشئون الإدارية</option>
+            <option value="إدارة الشئون القانونية">إدارة الشئون القانونية</option>
+            <option value="إدارة المساحة">إدارة المساحة</option>
+            <option value="إدارة تكنولوجيا المعلومات">إدارة تكنولوجيا المعلومات</option>
+            <option value="إدارة الشئون المالية">إدارة الشئون المالية</option>
+            <option value="إدارة الغطس">إدارة الغطس</option>
+            <option value="إدارة الوحدات الديناميكية">إدارة الوحدات الديناميكية</option>
+            <option value="إدارة الوحدات الغير ديناميكية">إدارة الوحدات الغير ديناميكية</option>
+            <option value="إدارة التخطيط">إدارة التخطيط</option>
+            <option value="إدارة الصيانة البرية">إدارة الصيانة البرية</option>
+            <option value="إدارة مراقبة وتوكيد الجودة">إدارة مراقبة وتوكيد الجودة</option>
+            <option value="إدارة الأعمال البحرية">إدارة الأعمال البحرية</option>
+            <option value="إدارة الجمارك">إدارة الجمارك</option>
+            <option value="إدارة العلاقات الحكومية">إدارة العلاقات الحكومية</option>
+            <option value="مكتب رئيس مجلس الإدارة">مكتب رئيس مجلس الإدارة</option>
+            <option value="إدارة الصحة والسلامة المهنية">إدارة الصحة والسلامة المهنية</option>
+            <option value="إدارة تنمية الاعمال">إدارة تنمية الاعمال</option>
         </select>
     </div>
-    <div class="input-wrapper" id="to-requester-div" style="display: none;">
+    <div class="input-wrapper" id="to-requester-div">
         <label>تاريخ الارسال للجهة الطالبة</label>
         <input class="input" type="date" id="to-requester-date" lang="ar">
     </div>
-    @* <div class="input-wrapper">
-        <label for="back-to-requester">ارجاع الي الجهة الطالبة</label>
-        <select id="back-to-requester">
-            <option value="" selected></option>
-            <option value="لا">لا</option>
+
+    <div class="input-wrapper">
+        <label for="back-to-vendor">ارجاع فاتورة للمورد</label>
+        <select id="back-to-vendor">
+            <option value="لا" selected>لا</option>
             <option value="نعم">نعم</option>
         </select>
     </div>
 
-    <div class="input-wrapper" id="to-requester-div" style="display: none;">
-        <label>تاريخ الارسال للجهة الطالبة</label>
-        <input class="input" type="date" id="to-requester-date" lang="ar">
-    </div> *@
+    <div class="input-wrapper" id="to-vendor-div" style="display: none;">
+        <label>تاريخ الارسال للمورد</label>
+        <input class="input" type="date" id="to-vendor-date" lang="ar">
+    </div>
+
     <div class="input-wrapper">
         <label for="area">الموقع</label>
         <select id="area" required>
@@ -174,19 +208,20 @@
 
 <script>
     // Get both elements
-    const select = document.getElementById('back-to-requester');
-    const dateDiv = document.getElementById('to-requester-div');
-
+    const select = document.getElementById('back-to-vendor');
+    const dateDiv = document.getElementById('to-vendor-div');
+    
     // Listen for changes in the dropdown
     select.addEventListener('change', function () {
         if (this.value === "نعم") {
             dateDiv.style.display = 'block'; // show div
         } else {
             dateDiv.style.display = 'none'; // hide div
-            document.getElementById('to-requester-date').value = ''; // optional: clear date
+            document.getElementById('to-vendor-date').value = ''; // optional: clear date
         }
     });
 </script>
+
 <script type="text/javascript">
 
     const invoiceNumber = document.getElementById('invoice-number');
@@ -236,22 +271,22 @@
             console.error(`Unsupported element type: ${element.tagName}`);
         }
     }
+
     function ResetInvoiceData(){
         EmptyField('invoice-number');
         ResetFieldValue('vendor-dropdown');
         ResetFieldValue('invoice-value-1');
         ResetFieldValue('invoice-value-2');
-        ResetFieldValue('invoice-value-3');
         ResetFieldValue('currency-1');
         ResetFieldValue('currency-2');
-        ResetFieldValue('currency-3');
         ResetFieldValue('invoice-date');
         ResetFieldValue('invoice-receipt-date');
         ResetFieldValue('requester');
-        ResetFieldValue('back-to-requester');
         ResetFieldValue('to-requester-date');
+        ResetFieldValue('to-vendor-date');
         ResetFieldValue('area');
     }
+
     function getElementValue(elementId) {
         const element = document.getElementById(elementId);
 
@@ -313,12 +348,11 @@
         var isoNumber = getElementValue('iso-number');/* document.getElementById('iso-number').value; */
         var isoDate = getElementValue('iso-date');/* document.getElementById('iso-date').value; */
         var invoiceNumber = getElementValue('invoice-number');/* document.getElementById('invoice-number').value; */
+        var poNumber = getElementValue('po-number');/* document.getElementById('invoice-number').value; */
         var invoiceValue1 = getElementValue('invoice-value-1');/* document.getElementById('invoice-value-1').value; */
         var invoiceValue2 = getElementValue('invoice-value-2');/* document.getElementById('invoice-value-2').value; */
-        var invoiceValue3 = getElementValue('invoice-value-3');/* document.getElementById('invoice-value-3').value; */
         var currency1 = getElementValue('currency-1');/* document.getElementById('currency-1').value; */
         var currency2 = getElementValue('currency-2'); /* document.getElementById('currency-2').value; */
-        var currency3 = getElementValue('currency-3');/* document.getElementById('currency-3').value; */
         var invoiceDate = getElementValue('invoice-date');/* document.getElementById('invoice-date').value; */
         var invoiceReceiptDate = getElementValue('invoice-receipt-date');/* document.getElementById('invoice-receipt-date').value; */
         var requester = getElementValue('requester');/* document.getElementById('requester').value; */
@@ -326,8 +360,8 @@
         // var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
         var vendorName = getSelectedVendor();
 
-        let backToRequester = document.getElementById('back-to-requester').value;
         let toRequesterDate = document.getElementById('to-requester-date').value;
+        let toVendorDate = document.getElementById('to-vendor-date').value;
         let area = document.getElementById('area').value;
         
         var url = '@Url.Action("ExecuteEdit", "Home")' +
@@ -335,43 +369,42 @@
             '&isoNumber=' + encodeURIComponent(isoNumber) +
             '&isoDate=' + encodeURIComponent(isoDate) +
             '&invoiceNumber=' + encodeURIComponent(invoiceNumber) +
+            '&poNumber=' + encodeURIComponent(poNumber) +
             '&invoiceValue1=' + encodeURIComponent(invoiceValue1) +
             '&invoiceValue2=' + encodeURIComponent(invoiceValue2) +
-            '&invoiceValue3=' + encodeURIComponent(invoiceValue3) +
             '&currency1=' + encodeURIComponent(currency1) +
             '&currency2=' + encodeURIComponent(currency2) +
-            '&currency3=' + encodeURIComponent(currency3) +
             '&invoiceDate=' + encodeURIComponent(invoiceDate) +
             '&invoiceReceiptDate=' + encodeURIComponent(invoiceReceiptDate) +
             '&requester=' + encodeURIComponent(requester) +            
             '&vendorName=' + encodeURIComponent(vendorName) +
-            '&backToRequester=' + encodeURIComponent(backToRequester) +
-            '&toRequesterDate=' + encodeURIComponent(toRequesterDate) +
+            '&sendToRequesterDate=' + encodeURIComponent(toRequesterDate) +
+            '&sendToVendorDate=' + encodeURIComponent(toVendorDate) +
             '&area=' + encodeURIComponent(area);
             // '&invoiceValues=' + invoiceValues.join(',') +
             // '&currencies=' + currencies.join(',') +
-
+        console.log(url);
         window.location.href = url;
     }
 
     function RedirectToExecuteCreateAction() {
-
+        var createType = "@ViewBag.ViewName";
         var userName = getElementValue('user-name'); /* document.getElementById('user-name').value; */
         var isoNumber = getElementValue('iso-number');/* document.getElementById('iso-number').value; */
         var isoDate = getElementValue('iso-date');/* document.getElementById('iso-date').value; */
         var invoiceNumber = getElementValue('invoice-number');/* document.getElementById('invoice-number').value; */
+        var poNumber = getElementValue('po-number');/* document.getElementById('invoice-number').value; */
         var invoiceValue1 = getElementValue('invoice-value-1');/* document.getElementById('invoice-value-1').value; */
         var invoiceValue2 = getElementValue('invoice-value-2');/* document.getElementById('invoice-value-2').value; */
-        var invoiceValue3 = getElementValue('invoice-value-3');/* document.getElementById('invoice-value-3').value; */
         var currency1 = getElementValue('currency-1');/* document.getElementById('currency-1').value; */
         var currency2 = getElementValue('currency-2'); /* document.getElementById('currency-2').value; */
-        var currency3 = getElementValue('currency-3');/* document.getElementById('currency-3').value; */
         var invoiceDate = getElementValue('invoice-date');/* document.getElementById('invoice-date').value; */
         var invoiceReceiptDate = getElementValue('invoice-receipt-date');/* document.getElementById('invoice-receipt-date').value; */
         var requester = getElementValue('requester');/* document.getElementById('requester').value; */
         // var vendorName = getElementValue('vendor-dropdown');/* document.getElementById('vendor-name').value; */
         var vendorName = getSelectedVendor();
         let sendToRequesterDate = document.getElementById('to-requester-date').value;
+        let sendToVendorDate = document.getElementById('to-vendor-date').value;
         let area = document.getElementById('area').value;
 
         var url = '@Url.Action("ExecuteCreate", "Home")' +
@@ -379,18 +412,19 @@
             '&isoNumber=' + encodeURIComponent(isoNumber) +
             '&isoDate=' + encodeURIComponent(isoDate) +
             '&invoiceNumber=' + encodeURIComponent(invoiceNumber) +
+            '&poNumber=' + encodeURIComponent(poNumber) +
             '&invoiceValue1=' + encodeURIComponent(invoiceValue1) +
             '&invoiceValue2=' + encodeURIComponent(invoiceValue2) +
-            '&invoiceValue3=' + encodeURIComponent(invoiceValue3) +
             '&currency1=' + encodeURIComponent(currency1) +
             '&currency2=' + encodeURIComponent(currency2) +
-            '&currency3=' + encodeURIComponent(currency3) +
             '&invoiceDate=' + encodeURIComponent(invoiceDate) +
             '&invoiceReceiptDate=' + encodeURIComponent(invoiceReceiptDate) +
             '&requester=' + encodeURIComponent(requester) +
             '&vendorName=' + encodeURIComponent(vendorName) +
             '&sendToRequesterDate=' + encodeURIComponent(sendToRequesterDate) +
-            '&area=' + encodeURIComponent(area);
+            '&sendToVendorDate=' + encodeURIComponent(sendToVendorDate) +
+            '&area=' + encodeURIComponent(area) +
+            '&createType=' + encodeURIComponent(createType);
         // '&invoiceValues=' + invoiceValues.join(',') +
         // '&currencies=' + currencies.join(',') +
 
@@ -413,6 +447,8 @@
     }
 
     function updateInvoiceNumber() {
+        setElementValue('back-to-vendor', 'لا');
+        document.getElementById('to-vendor-div').style.display = 'none';
         var isoNumber = document.getElementById('iso-number').value;
         var invoiceInput = document.getElementById('invoice-number');
         var invoiceDropdown = document.createElement('select');
@@ -471,41 +507,66 @@
     }
 
     function updateInvoiceData() {
+        console.log('Fetching invoice data...');
         const isoNumber = getElementValue('iso-number');
         const invoiceNumber = getElementValue('invoice-number');
-
+        console.log(isoNumber);
+        console.log(invoiceNumber);
         if (invoiceNumber !== '') {
             // Perform AJAX call to fetch invoice details
+            console.log("Calling GetInvoiceData function...");
             $.ajax({
                 url: '/Home/GetInvoiceData', // Replace with your controller and action
                 type: 'GET',
                 data: { isoNumber: isoNumber, invoiceNumber: invoiceNumber },
+                
                 success: function (response) {
+                    console.log(@ViewBag.Flag);
+                    console.log("Success");
                     // Update fields with the fetched data
                     const responseDetails = response.details;
+                    console.log(response);
                     // Use the generic function to set values
-                    ResetFieldValue('currency-1');
-                    ResetFieldValue('currency-2');
-                    ResetFieldValue('currency-3');
-                    ResetFieldValue('invoice-value-1');
-                    ResetFieldValue('invoice-value-2');
-                    ResetFieldValue('invoice-value-3');
-                    ResetFieldValue('vendor-dropdown');
-                    ResetFieldValue('invoice-date');
-                    ResetFieldValue('invoice-receipt-date');
-                    ResetFieldValue('requester');
-                    ResetFieldValue('iso-date');
+                    // ResetFieldValue('currency-1');
+                    // ResetFieldValue('currency-2');
+                    // ResetFieldValue('invoice-value-1');
+                    // ResetFieldValue('invoice-value-2');
+                    // ResetFieldValue('vendorSearch');
+                    // ResetFieldValue('invoice-date');
+                    // ResetFieldValue('invoice-receipt-date');
+                    // ResetFieldValue('requester');
+                    // ResetFieldValue('to-requester-date');
+                    // ResetFieldValue('iso-date');
+                    // ResetFieldValue('area');
+                    console.log("responseDetails.PONumber" )
+                    console.log(responseDetails.PONumber )
+                    setElementValue('po-number', responseDetails.poNumber);
+                    
+         
+                    console.log(document.getElementById('po-number'));
                     setElementValue('currency-1', responseDetails.currency1);
+                    console.log(responseDetails.currency1 )
                     setElementValue('currency-2', responseDetails.currency2);
-                    setElementValue('currency-3', responseDetails.currency3);
+                    console.log(responseDetails.currency2 )
                     setElementValue('invoice-value-1', responseDetails.invoiceValue1);
                     setElementValue('invoice-value-2', responseDetails.invoiceValue2);
-                    setElementValue('invoice-value-3', responseDetails.invoiceValue3);
-                    setElementValue('vendor-dropdown', responseDetails.vendorName);
+                    console.log(responseDetails.invoiceValue2 )
+                    setElementValue('vendorSearch', responseDetails.vendorName);
                     setElementValue('invoice-date', responseDetails.invoiceDate);
                     setElementValue('invoice-receipt-date', responseDetails.invoiceReceiptDate);
                     setElementValue('requester', responseDetails.requester);
+                    console.log(responseDetails.sendToRequesterDate);
+                    setElementValue('to-requester-date', responseDetails.sendtoRequesterDate);
+                    if (responseDetails.sendtoVendorDate !== '' && responseDetails.sendtoVendorDate !== null)
+                    {
+                        setElementValue('back-to-vendor', 'نعم');
+                        document.getElementById('to-vendor-div').style.display = 'block';
+                    }
+
+                    setElementValue('to-vendor-date', responseDetails.sendtoVendorDate);
                     setElementValue('iso-date', responseDetails.isoDate);
+                    setElementValue('area', responseDetails.area);                    
+
                 },
                 error: function (xhr, status, error) {
                     console.error('Error fetching invoice data:', error);
@@ -534,7 +595,7 @@
             success: function (vendors) {
                 console.log('checkpoint');
                 let vendorDropdown = $("#vendor-dropdown");
-                console.log(vendorDropdown);
+                console.log("check vendor list" + vendorDropdown);
                 vendorDropdown.empty();  // Clear existing options
                 vendorDropdown.append('<option value="">اختر المورد</option>'); // Default option
 

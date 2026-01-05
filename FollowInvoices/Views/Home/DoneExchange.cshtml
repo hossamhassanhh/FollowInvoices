@@ -8,6 +8,16 @@
 <body>
     <div class="form-container">
         <h2>تم اضافة طلب الصرف بنجاح. يمكنك الانتقال إلى الصفحة الرئيسية او الرجوع لادخال طلب صرف جديد.</h2>
+        <table class="centered-table">
+            <tr>
+                <td>
+                    رقم طلب الصرف:
+                </td>
+                <td>
+                    @ViewBag.NextExchangeNumber
+                </td>
+            </tr>
+        </table>
     </div>
     <div class="button-container">
         <a href="/Home/Index" style="text-decoration: none; background-color: #4CAF50; color: #fff; padding: 10px 20px; border-radius: 5px; margin: 40px;">الصفحة الرئيسية</a>

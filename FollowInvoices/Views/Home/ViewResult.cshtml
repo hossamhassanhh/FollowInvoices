@@ -1,4 +1,72 @@
-﻿@{
+﻿<style>
+    .auto-fit-input {
+        text-align: center;
+        font-size: larger;
+        font-weight: bolder;
+        margin-bottom: 10px;
+        border-radius: 20px;
+        padding: 8px 16px;
+        width: auto;
+        display: inline-block;
+        min-width: 100px;
+        border: 1px solid #ccc;
+        background-color: #f8f9fa;
+        box-sizing: border-box;
+    }
+    @@media print {
+        body *
+
+    {
+        visibility: hidden;
+    }
+
+    #printArea,
+    #printArea * {
+        visibility: visible;
+    }
+
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        direction: rtl;
+    }
+
+        .print-header {
+            display: flex;
+            justify-content: flex-end; /* يمين الصفحة */
+            align-items: center;
+            gap: 10px;
+            direction: rtl;
+            text-align: right;
+            padding: 5px 10px;
+        }
+
+            .print-header img {
+                height: 60px;
+            }
+
+            .print-header h2 {
+                margin: 0;
+                font-size: 18px;
+                white-space: nowrap;
+            }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+
+    th, td {
+        border: 1px solid #000;
+        padding: 4px;
+    }
+
+    }
+</style>
+@{
     // Cast the ViewBag data to a DataTable
     System.Data.DataTable dataTable = ViewBag.DataTable;
 
@@ -113,44 +181,118 @@
     <script src="/js/jspdf.plugin.autotable.js"></script>
     <script src="/js/xlsx.full.min.js"></script>
 </head>
-<body>
-    <div class="table-container">
-        @if (dataTable != null && dataTable.Rows.Count > 0 && visibleColumns.Count > 0)
-        {
-            <table id="dataTable">
-                <thead>
-                    <tr>
-                        @foreach (var col in visibleColumns.AsEnumerable().Reverse())
-                        {
-                            <th>@col.ColumnName</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (System.Data.DataRow row in dataTable.Rows)
-                    {
+<body>    
+    @* <div style="position: center;">
+
+        <input class="auto-fit-input" value="@ViewBag.ViewName" disabled />
+        @{
+            if (!string.IsNullOrEmpty(ViewBag.FilterDate))
+            {
+                <input class="auto-fit-input" value="@ViewBag.FilterDate" disabled />
+            }
+        }
+    </div> *@
+    <div id="printArea">
+
+        <div class="table-container">
+            @if (dataTable != null && dataTable.Rows.Count > 0 && visibleColumns.Count > 0)
+            {
+                <table id="dataTable">
+
+                    
+                    <thead>
+                        <tr>
+                            <th colspan="4" style="border:none;">
+                                <div class="print-header">
+                                    <img src="/Images/pms-logo.png" height="60" />
+                                    <h2>شركة خدمات البترول البحرية</h2>
+                                </div>
+                            </th>
+                            @* <th colspan="2" style="border:none;">
+                                <div class="print-header">
+                                    <h2>شركة خدمات البترول البحرية</h2>
+                                </div>
+                            </th> *@
+                            @* <th colspan="2" style="border:solid; background-color: steelblue !important; color: whitesmoke;">
+                                <div class="print-header">
+                                    <h2>
+                                        @ViewBag.ViewName
+                                    </h2>
+                                </div>
+                            </th> *@
+                            <th colspan="@visibleColumns.Count" style="border:none;"></th>
+                        </tr>
+                        <tr>
+                            <th colspan="@visibleColumns.Count/2" style="border: none;">
+                                <div class="print-header">
+                                    <h2>
+                                        @ViewBag.ViewName
+                                    </h2>
+                                    @{
+                                        if (!string.IsNullOrEmpty(ViewBag.FilterDate))
+                                        {
+                                            <h2>@ViewBag.FilterDate</h2>
+                                        }
+                                    }
+                                </div>
+                            </th>
+                            <th colspan="@visibleColumns.Count" style="border:none;"></th>
+                        </tr>
                         <tr>
                             @foreach (var col in visibleColumns.AsEnumerable().Reverse())
                             {
-                                <td>@Html.Raw(ToArabicDigits(row[col]))</td>
+                                <th>@col.ColumnName</th>
                             }
                         </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>غير مسجل</p>
-        }
+                    </thead>
+                    <tbody>
+                        @foreach (System.Data.DataRow row in dataTable.Rows)
+                        {
+                            <tr>
+                                @foreach (var col in visibleColumns.AsEnumerable().Reverse())
+                                {
+                                    <td>@Html.Raw(row[col])</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>غير مسجل</p>
+            }
+        </div>
+
     </div>
+    
 
     <div class="button-container" style="margin-bottom: 20px;">
         <button class="custom-btn" onclick="printTable()">طباعة الجدول</button>
         <button class="custom-btn" onclick="exportExcel()">تصدير كـ Excel</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.auto-fit-input');
 
+            inputs.forEach(input => {
+                // Create a temporary span to measure text width
+                const tempSpan = document.createElement('span');
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.whiteSpace = 'pre';
+                tempSpan.style.font = window.getComputedStyle(input).font;
+                tempSpan.textContent = input.value || ' ';
+
+                document.body.appendChild(tempSpan);
+                const textWidth = tempSpan.offsetWidth;
+                document.body.removeChild(tempSpan);
+
+                // Set input width to text width + padding
+                input.style.width = (textWidth + 42) + 'px'; // 32px for padding (16px left + 16px right)
+            });
+        });
+    </script>
     <script>
         function GoToHomePage() {
             var url = '@Url.Action("Index", "Home")';
@@ -160,7 +302,15 @@
         function printTable() {
             window.print();
         }
+        // function printTable() {
+        //     // Create a new window for printing
+        //     const printWindow = window.open('', '_blank');
 
+        //     // Get the HTML content you want to print
+        //     const content = document.body.innerHTML;
+        //      printWindow.document.write(content);
+        //      printWindow.document.close();
+        // }
         function exportExcel() {
             const table = document.getElementById("dataTable");
             const workbook = XLSX.utils.book_new();

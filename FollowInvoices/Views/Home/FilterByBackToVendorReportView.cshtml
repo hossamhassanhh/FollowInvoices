@@ -10,7 +10,7 @@
         </div>
     </div>
     <div class="button-container">
-        <button class="custom-btn" onclick="FilterByRequesterReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="FilterByBackToVendorReport()">تنفيذ</button>
         <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
@@ -19,32 +19,10 @@
 <script src="/js/jquery-3.7.1.min.js"></script>
 
 <script type="text/javascript">
-    function getElementValue(elementId) {
-        const element = document.getElementById(elementId);
-
-        if (!element) {
-            console.error(`Element with ID ${elementId} not found.`);
-            return null;
-        }
-
-        // Check if the element is a select dropdown
-        if (element.tagName === 'SELECT') {
-            return element.options[element.selectedIndex]?.value || '';
-        }
-        // Check if the element is an input, textarea, or other input-like element
-        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-            return element.value;
-        }
-        // Handle other cases (e.g., div, span, etc.)
-        else {
-            console.error(`Unsupported element type: ${element.tagName}`);
-            return null;
-        }
-    }
     function fetchAllVendors() {
         var invoiceInput = document.getElementById('vendor-name');
         var invoiceDropdown = document.createElement('select');
-        
+
         // Perform AJAX call to fetch invoice numbers
         $.ajax({
             url: '/Home/GetAllVendors', // Adjust as per your route
@@ -56,9 +34,9 @@
 
                     // Add a placeholder option
                     const placeholderOption = document.createElement('option');
-                    placeholderOption.value = '';
-                    placeholderOption.textContent = '';
-                    placeholderOption.disabled = true;
+                    placeholderOption.value = 'كل الموردين';
+                    placeholderOption.textContent = 'كل الموردين';
+                    placeholderOption.disabled = false;
                     placeholderOption.selected = true;
                     invoiceDropdown.appendChild(placeholderOption);
 
@@ -91,7 +69,29 @@
                 alert('Error fetching vendor names. Please try again.');
             }
         }
-        );        
+        );
+    }
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
     }
     function GoToQueryMainPage() {
         var url = '@Url.Action("Query", "Home")';
@@ -102,9 +102,9 @@
         // Redirect to the URL
         window.location.href = url;
     }
-    function FilterByRequesterReport() {
+    function FilterByBackToVendorReport() {
         var id = getElementValue("vendor-name");
-        var url = '@Url.Action("FilterByVendorReport", "Home")' +
+        var url = '@Url.Action("FilterByBackToVendorReport", "Home")' +
             '?id=' + encodeURIComponent(id);
 
         // Redirect to the URL

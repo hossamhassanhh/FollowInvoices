@@ -1,4 +1,5 @@
-﻿<div class="form-container">
+﻿<h2>انهاء الصرف</h2>
+<div class="form-container">
     <div class="input-wrapper">
         <label>المورد</label>
         <select id="vendor-dropdown" required oninput="updateInvoiceNumber()">
@@ -28,7 +29,7 @@
             <option value="تامر عبد الفتاح">تامر عبد الفتاح</option>
             <option value="مني الشهاوي">مني الشهاوي</option>
             <option value="مدحت سمیر">مدحت سمیر</option>
-            <option value="عصام عبد العال">عصام عبد العال</option>
+            <option value="سامح مصطفي">سامح مصطفي</option>
             <option value="ندا سمير">ندا سمير</option>
             <option value="شيماء ماجد">شيماء ماجد</option>
             <option value="اسلام علی">اسلام علی</option>
@@ -73,6 +74,7 @@
             <option value="ریال سعودی">ریال سعودی</option>
             <option value="کرونه نرویجی">کرونه نرویجی</option>
             <option value="ین يابانی">ین يابانی</option>
+            <option value="درهم اماراتي">درهم اماراتي</option>
         </select>
     </div>
     @* <div class="input-wrapper">
@@ -98,7 +100,7 @@
 <script src="/js/jquery-3.7.1.min.js"></script>
 <script src="/js/select2.min.js"></script>
 <link href="/css/select2.min.css" rel="stylesheet" />
-<script>
+@* <script>
     // Get both elements
     const select = document.getElementById('back-to-requester');
     const dateDiv = document.getElementById('to-requester-div');
@@ -112,7 +114,7 @@
         document.getElementById('to-requester-date').value = ''; // clear date
       }
     });
-</script>
+</script> *@
 <script type="text/javascript">
     const newElement = document.createElement('input');
     newElement.setAttribute("type", "text");
@@ -169,12 +171,17 @@
             console.error(`Element with ID ${elementId} not found.`);
             return;
         }
-
+        console.log("set element value.....");
         // Check if the element is a select dropdown
         if (element.tagName === 'SELECT') {
+            console.log(element.tagName);
+            console.log(element.id);
             // Loop through options and set the selected option
             for (let option of element.options) {
-                if (option.value === value) {
+                console.log(option);
+                console.log('='+option.value+'=>'+value+'=');
+                if (option.value === value.trim()) {
+                    
                     option.selected = true;
                     break;
                 }
@@ -245,12 +252,14 @@
         let invoiceNumbers = document.getElementById('searchBox').value;
         let exchangeCase = getElementValue('exchange-case');
         let finalizeExchangeDate = getElementValue('finalize-exchange-date');
+        let invoiceExchangeValue = getElementValue('invoice-value');
 
         let url = '@Url.Action("ExecuteFinalizeExchange", "Home")' +
             '?vendorName=' + encodeURIComponent(vendorName) +
             '&invoiceNumbers=' + encodeURIComponent(invoiceNumbers) +
             '&exchangeCase=' + encodeURIComponent(exchangeCase) +
-            '&finalizeExchangeDate=' + encodeURIComponent(finalizeExchangeDate);
+            '&finalizeExchangeDate=' + encodeURIComponent(finalizeExchangeDate) +
+            '&invoiceExchangeValue=' + encodeURIComponent(invoiceExchangeValue);
 
         window.location.href = url;
     }
@@ -334,6 +343,8 @@
                     setElementValue('currency', responseDetails.exchangeCurrency);
                     setElementValue('back-to-requester', responseDetails.backToRequester);
                     setElementValue('to-requester-date', responseDetails.toRequesterDate);
+                    setElementValue('exchange-case', responseDetails.finalizeExchangeCase);
+                    setElementValue('finalize-exchange-date', responseDetails.finalizeExchangeDate);
                 },
                 error: function (xhr, status, error) {
                     console.error('Error fetching invoice data:', error);

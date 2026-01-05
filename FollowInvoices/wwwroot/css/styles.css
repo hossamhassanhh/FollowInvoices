@@ -594,3 +594,17 @@ h3 {
         font-size: 1rem;
     }
 }
+.auto-fit-input {
+    text-align: center;
+    font-size: larger;
+    font-weight: bolder;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    padding: 8px 16px;
+    width: auto;
+    display: inline-block;
+    min-width: 100px;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    box-sizing: border-box;
+}

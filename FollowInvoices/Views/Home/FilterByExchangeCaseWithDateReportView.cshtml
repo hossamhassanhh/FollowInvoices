@@ -1,4 +1,7 @@
-﻿<div class="form-container">
+﻿<div style="position: center;">
+    <input class="auto-fit-input" value="@ViewBag.ViewName" disabled />
+</div>
+<div class="form-container">
     <div class="input-wrapper">
         <label for="exchange-case">اختر حالة الصرف</label>
         <div class="div-container">
@@ -6,6 +9,7 @@
                 <option value="" selected></option>
                 <option value="دفعة مقدمة">دفعة مقدمة</option>
                 <option value="شيك مقابل الاستلام">شيك مقابل الاستلام</option>
+                <option value="تسوية شيك مقابل الاستلام">تسوية شيك مقابل الاستلام</option>
                 <option value="فاتورة">فاتورة</option>
                 <option value="رد تأمين">رد تأمين</option>
                 <option value="تسوية دفعة">تسوية دفعة</option>
@@ -15,13 +19,20 @@
                 <option value="سلفة مستديمة">سلفة مستديمة</option>
                 <option value="تسوية سلفة مؤقتة">تسوية سلفة مؤقتة</option>
                 <option value="تسوية سلفة مستديمة">تسوية سلفة مستديمة</option>
+                <option value="علاج معاشات">علاج معاشات</option>
+                <option value="علاج اسري">علاج اسري</option>
+                <option value="علاج شخصي">علاج شخصي</option>
+                <option value="التامينات الاجتماعية">التامينات الاجتماعية</option>
+                <option value="الخبراء الاجانب">الخبراء الاجانب</option>
+                <option value="نثريات">نثريات</option>
+                <option value="بدلات إغتراب">بدلات إغتراب</option>
             </select>
             <button class="btn" onclick="EmptyField('exchange-case')">حالة صرف جديدة</button>
         </div>
-        <div class="input-wrapper">
+        @* <div class="input-wrapper">
             <label>التاريخ</label>
             <input class="input" type="date" id="date" lang="ar" required>
-        </div>
+        </div> *@
     </div>
     <div class="button-container">
         <button class="custom-btn" onclick="FilterByExchangeCaseWithDateReport()">تنفيذ</button>
@@ -90,16 +101,10 @@
         window.location.href = url;
     }
     function FilterByExchangeCaseWithDateReport() {
-        console.log("test");
         var id = getElementValue("exchange-case");
-        console.log(id);
-        var date = getElementValue("date");
-        
-        console.log(date);
 
         var url = '@Url.Action("FilterByExchangeCaseWithDateReport", "Home")' +
-            '?id=' + encodeURIComponent(id) +
-            '&date=' + encodeURIComponent(date);
+            '?id=' + encodeURIComponent(id);
 
         // Redirect to the URL
         window.location.href = url;

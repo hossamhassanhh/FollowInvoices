@@ -23,6 +23,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Reflection.Metadata;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.IdentityModel.Tokens;
+using System.Security;
 
 namespace FollowInvoices.Controllers
 {
@@ -42,17 +43,77 @@ namespace FollowInvoices.Controllers
             _connectionString = _configuration.GetConnectionString("DefaultConnection");
             _logger = logger;
             _options = options;
-            _hostingEnvironment = hostingEnvironment;
+            _hostingEnvironment = hostingEnvironment;            
         }
 
         //[ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
         //[Authorize]
+        
         public IActionResult Index()
+
         {
             return View();
         }
-        public IActionResult AddVendor()
+
+        public string CheckPermission()
         {
+            string View = "";
+            string username = User.Identity.Name;
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                con.Open();
+                SqlCommand cmd = new SqlCommand(@"SELECT Permission FROM Users WHERE DisplayName = @username", con);
+                cmd.Parameters.AddWithValue("@username", username);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        string permission = reader["Permission"]?.ToString();
+                        if ( permission.Trim() == "Admin")
+                        {
+                            return "Create & Change";
+                        }
+                        else if (permission.Trim() == "User")
+                        {
+                            return "Create";
+                        }
+                        else
+                        {
+                            return "Query";
+                        }
+                    }
+                }
+            }
+
+            return "Query";
+        }
+        public string CheckPermittedArea()
+        {
+            string username = User.Identity.Name;
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                con.Open();
+                SqlCommand cmd = new SqlCommand(@"SELECT Area FROM Users WHERE DisplayName = @username", con);
+                cmd.Parameters.AddWithValue("@username", username);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        string permittedArea = reader["Area"]?.ToString();
+                        if (permittedArea.Trim() == "alex")
+                        {
+                            return "alex";
+                        }
+                    }
+                }
+            }
+
+            return "all";
+        }
+        public IActionResult AddVendor()
+        {            
             var vendors = new List<Vendor>();
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -73,9 +134,7 @@ namespace FollowInvoices.Controllers
 
             return View(vendors);
         }
-    
-
-    public class Vendor
+        public class Vendor
     {
         public int Id { get; set; }
         public string VendorName { get; set; }
@@ -83,7 +142,11 @@ namespace FollowInvoices.Controllers
         [HttpGet]
         public IActionResult ExecuteAddVendor(string vendor_name)
         {
-            
+            if (!CheckPermission().Contains("Change"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لاضافة مورد جديدة";
+                return View("Failed");
+            }
             int newId;
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
@@ -115,19 +178,163 @@ namespace FollowInvoices.Controllers
 
             return View("AddVendorDoneNotificationView");
         }
+        [HttpPost]
+        public JsonResult UpdateVendor(int id, string vendorName)
+        {            
+            try
+            {
+                if (!CheckPermission().Contains("Change"))
+                {
+                    return Json(new { success = false, message = "ليس لديك صلاحية لتغيير اسم المورد" });
+                }
+                if (id <= 0 || string.IsNullOrWhiteSpace(vendorName))
+                {
+                    return Json(new { success = false, message = "بيانات غير صالحة" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // First, get the current vendor name before update
+                    string getCurrentNameQuery = "SELECT VendorName FROM Vendors WHERE Id = @Id";
+                    string currentVendorName = "";
+
+                    using (SqlCommand getCommand = new SqlCommand(getCurrentNameQuery, connection))
+                    {
+                        getCommand.Parameters.AddWithValue("@Id", id);
+                        var result = getCommand.ExecuteScalar();
+                        currentVendorName = result?.ToString() ?? "";
+                    }
+
+                    if (string.IsNullOrEmpty(currentVendorName))
+                    {
+                        return Json(new { success = false, message = "لم يتم العثور على المورد" });
+                    }
+
+                    // Update vendor name in Vendors table
+                    string updateVendorQuery = "UPDATE Vendors SET VendorName = @VendorName WHERE Id = @Id";
+                    int vendorRowsAffected = 0;
+
+                    using (SqlCommand updateVendorCommand = new SqlCommand(updateVendorQuery, connection))
+                    {
+                        updateVendorCommand.Parameters.AddWithValue("@VendorName", vendorName.Trim());
+                        updateVendorCommand.Parameters.AddWithValue("@Id", id);
+
+                        vendorRowsAffected = updateVendorCommand.ExecuteNonQuery();
+                    }
+
+                    if (vendorRowsAffected == 0)
+                    {
+                        return Json(new { success = false, message = "لم يتم العثور على المورد" });
+                    }
+
+                    // Update vendor name in InvoiceDetails table
+                    string updateInvoiceDetailsQuery = "UPDATE InvoiceDetails SET VendorName = @NewVendorName WHERE VendorName = @CurrentVendorName";
+                    int invoiceRowsAffected = 0;
+
+                    using (SqlCommand updateInvoiceCommand = new SqlCommand(updateInvoiceDetailsQuery, connection))
+                    {
+                        updateInvoiceCommand.Parameters.AddWithValue("@NewVendorName", vendorName.Trim());
+                        updateInvoiceCommand.Parameters.AddWithValue("@CurrentVendorName", currentVendorName);
+
+                        invoiceRowsAffected = updateInvoiceCommand.ExecuteNonQuery();
+                    }
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"تم تحديث اسم المورد بنجاح. تم تحديث {invoiceRowsAffected} فاتورة مرتبطة."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating vendor with ID {VendorId}", id);
+                return Json(new { success = false, message = "حدث خطأ أثناء التحديث: " + ex.Message });
+            }
+        }
+        [HttpPost]
+        public JsonResult DeleteVendor(int id)
+        {            
+            try
+            {
+                if (!CheckPermission().Contains("Change"))
+                {
+                    return Json(new { success = false, message = "ليس لديك صلاحية لاضافة مورد جديدة" });
+                }
+                if (id <= 0)
+                {
+                    return Json(new { success = false, message = "معرف المورد غير صالح" });
+                }
+
+                string connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // First, check if vendor has any related invoices
+                    string checkQuery = "SELECT COUNT(*) FROM InvoiceDetails WHERE VendorName IN (SELECT VendorName FROM Vendors WHERE Id = @Id)";
+                    using (SqlCommand checkCommand = new SqlCommand(checkQuery, connection))
+                    {
+                        checkCommand.Parameters.AddWithValue("@Id", id);
+                        int invoiceCount = (int)checkCommand.ExecuteScalar();
+
+                        if (invoiceCount > 0)
+                        {
+                            return Json(new { success = false, message = "لا يمكن حذف المورد لأنه مرتبط بفواتير حالية" });
+                        }
+                    }
+
+                    // Delete the vendor
+                    string deleteQuery = "DELETE FROM Vendors WHERE Id = @Id";
+                    using (SqlCommand command = new SqlCommand(deleteQuery, connection))
+                    {
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            return Json(new { success = true, message = "تم حذف المورد بنجاح" });
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "لم يتم العثور على المورد" });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting vendor with ID {VendorId}", id);
+                return Json(new { success = false, message = "حدث خطأ أثناء الحذف: " + ex.Message });
+            }
+        }
         public IActionResult Create()
         {
+            ViewBag.ViewName = "Create";
+            if (!CheckPermission().Contains("Create"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لاضافة فاتورة جديدة";
+                return View("Failed");
+            }
+            string area = (CheckPermittedArea() == "alex") ? "المعدية" : "الرئيسي";
             DateTime currentDateOnly = DateTime.Now.Date;
             ViewBag.IsoDate = currentDateOnly.ToString("yyyy-MM-dd");
             
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                string getIso = @"SELECT MAX(IsoNumber) FROM InvoiceDetails";
+                string getIso = @"SELECT MAX(IsoNumber) FROM InvoiceDetails where Area = @Area";
 
                 // Execute your SQL query using the connection
                 using (SqlCommand command = new SqlCommand(getIso, connection))
                 {
+                    command.Parameters.AddWithValue("@Area", area);
                     object result = command.ExecuteScalar();
 
                     // Check if a valid number was returned
@@ -141,7 +348,7 @@ namespace FollowInvoices.Controllers
                     }
                     else
                     {
-                        ViewBag.NextIsoNumber = 1;
+                        ViewBag.NextIsoNumber = area == "الرئيسي" ? 1 : 1001;
                     }
                 }
             }
@@ -150,9 +357,10 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult CreateOnSameIso()
         {
+            ViewBag.ViewName = "CreateOnSameIso";
             DateTime currentDateOnly = DateTime.Now.Date;
             ViewBag.IsoDate = currentDateOnly.ToString("yyyy-MM-dd");
-            
+
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
@@ -177,6 +385,14 @@ namespace FollowInvoices.Controllers
                         ViewBag.NextIsoNumber = 1;
                     }
                 }
+                string getVendor = @"SELECT VendorName FROM InvoiceDetails WHERE Isonumber = @Isonumber";
+                using (SqlCommand command = new SqlCommand(getVendor, connection))
+                {
+                    command.Parameters.AddWithValue("@Isonumber", ViewBag.NextIsoNumber);
+                    object getVendorResult = command.ExecuteScalar();
+                    ViewBag.VendorName = getVendorResult.ToString();
+
+                }
             }
 
             return View("Create");
@@ -184,12 +400,10 @@ namespace FollowInvoices.Controllers
 
         [HttpGet]
         public IActionResult ExecuteCreate(string userName, string isoNumber, string isoDate, string invoiceNumber, 
-            string invoiceValue1, string invoiceValue2, string invoiceValue3, string currency1, string currency2,
-            string currency3, string invoiceDate, string invoiceReceiptDate, string requester,
-            string vendorName, string sendToRequesterDate, string area)
-        {
-            //string username = User.Identity.Name;
-            
+            string poNumber, string invoiceValue1, string invoiceValue2, string invoiceValue3, string currency1, string currency2,
+            string invoiceDate, string invoiceReceiptDate, string requester,
+            string vendorName, string sendToRequesterDate, string sendToVendorDate, string area, string createType)
+        {            
             IsoDetails isoDetails = new IsoDetails();
             //DateTime isoDate = DateTime.Today;
             using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -211,14 +425,38 @@ namespace FollowInvoices.Controllers
                 //        }
                 //    }
                 //}
+                ViewBag.NextIsoNumber = isoNumber;
+                string _area = (CheckPermittedArea() == "alex") ? "المعدية" : "الرئيسي";
+                if (createType == "Create")
+                {
+                    string getIso = @"SELECT MAX(IsoNumber) FROM InvoiceDetails where Area = @Area";
 
+                    // Execute your SQL query using the connection
+                    using (SqlCommand command = new SqlCommand(getIso, connection))
+                    {
+                        command.Parameters.AddWithValue("@Area", _area);
+                        object result = command.ExecuteScalar();
+
+                        // Check if a valid number was returned
+                        if (result != DBNull.Value && result != null)
+                        {
+                            int maxIsoNumber = Convert.ToInt32(result);
+                            int nextIsoNumber = maxIsoNumber + 1;
+
+                            // Pass the next IsoNumber to the view using ViewBag
+                            ViewBag.NextIsoNumber = nextIsoNumber;
+                            isoNumber = nextIsoNumber.ToString();
+                        }
+                    }
+                }
+                
                 // Insert into InvoiceDetails
                 string insertQueryIntoInvoiceDetails = @"INSERT INTO InvoiceDetails (IsoNumber, IsoDate, InvoiceNumber, 
-                    InvoiceValue1, InvoiceValue2, InvoiceValue3, Currency1, Currency2, Currency3, InvoiceDate,
-                    InvoiceReceiptDate, Requester, VendorName, UserName, SendToRequesterDate, Area, InvoiceEntree)
-                    VALUES (@IsoNumber, @IsoDate, @InvoiceNumber, @InvoiceValue1, @InvoiceValue2, @InvoiceValue3, @Currency1, 
-                    @Currency2, @Currency3, @InvoiceDate, @InvoiceReceiptDate, @Requester, 
-                    @VendorName, @UserName, @SendToRequesterDate, @Area, @InvoiceEntree);";
+                    PONumber, InvoiceValue1, InvoiceValue2, Currency1, Currency2, InvoiceDate,
+                    InvoiceReceiptDate, Requester, VendorName, UserName, SendToRequesterDate, SendToVendorDate, Area, InvoiceEntree)
+                    VALUES (@IsoNumber, @IsoDate, @InvoiceNumber, @PONumber, @InvoiceValue1, @InvoiceValue2, @Currency1, 
+                    @Currency2, @InvoiceDate, @InvoiceReceiptDate, @Requester, 
+                    @VendorName, @UserName, @SendToRequesterDate, @SendToVendorDate, @Area, @InvoiceEntree);";
                 //SELECT SCOPE_IDENTITY()
                 using (SqlCommand command = new SqlCommand(insertQueryIntoInvoiceDetails, connection))
                 {
@@ -226,24 +464,21 @@ namespace FollowInvoices.Controllers
                     command.Parameters.AddWithValue("@IsoNumber", Convert.ToInt64(isoNumber));
                     command.Parameters.AddWithValue("@IsoDate", isoDate);
                     command.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber);
+                    command.Parameters.AddWithValue("@PONumber", poNumber ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@InvoiceValue1", Convert.ToDecimal(invoiceValue1));
                     command.Parameters.AddWithValue("@InvoiceValue2",
                         string.IsNullOrWhiteSpace(invoiceValue2) || invoiceValue2 == "null"
                             ? (object)DBNull.Value
                             : Convert.ToDecimal(invoiceValue2));
 
-                    command.Parameters.AddWithValue("@InvoiceValue3",
-                        string.IsNullOrWhiteSpace(invoiceValue3) || invoiceValue3 == "null"
-                            ? (object)DBNull.Value
-                            : Convert.ToDecimal(invoiceValue3));
                     command.Parameters.AddWithValue("@Currency1", currency1);
                     command.Parameters.AddWithValue("@Currency2", currency2 ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@Currency3", currency3 ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@InvoiceDate", invoiceDate);
                     command.Parameters.AddWithValue("@InvoiceReceiptDate", invoiceReceiptDate);
                     command.Parameters.AddWithValue("@Requester", requester ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@VendorName", vendorName);
                     command.Parameters.AddWithValue("@SendToRequesterDate", sendToRequesterDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@SendToVendorDate", sendToVendorDate ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@Area", area ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@InvoiceEntree", userName ?? (object)DBNull.Value);
 
@@ -314,47 +549,49 @@ namespace FollowInvoices.Controllers
         }
         [HttpGet]
         public IActionResult ExecuteEdit(string userName, string isoNumber, string isoDate, string invoiceNumber,
-            string invoiceValue1, string invoiceValue2, string invoiceValue3, string currency1, string currency2,
-            string currency3, string invoiceDate, string invoiceReceiptDate, string requester,
-            string vendorName, string backToRequester, string toRequesterDate, string area)
+            string poNumber, string invoiceValue1, string invoiceValue2, string currency1, string currency2,
+            string invoiceDate, string invoiceReceiptDate, string requester,
+            string vendorName, string sendToRequesterDate, string sendToVendorDate, string area)
         {
-            //string username = User.Identity.Name;
-            
+            if (!CheckPermission().Contains("Change"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لتعديل فاتورة";
+                return View("Failed");
+            }
+            if (CheckPermittedArea() == "alex" && area != "المعدية")
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لتعديل فاتورة علي منطقة الرئيسي";
+                return View("Failed");
+            }
             IsoDetails isoDetails = new IsoDetails();
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                string insertQueryIntoInvoiceDetails = @"Update InvoiceDetails set
-                InvoiceValue1=@InvoiceValue1, InvoiceValue2=@InvoiceValue2, InvoiceValue3=@InvoiceValue3, 
-                Currency1=@Currency1, Currency2=@Currency2, Currency3=@Currency3, InvoiceDate=@InvoiceDate, 
-                InvoiceReceiptDate=@InvoiceReceiptDate, Requester=@Requester,
-                VendorName=@VendorName, BackToRequester = @BackToRequester, ToRequesterDate = @ToRequesterDate, Area = @Area , InvoiceEntree = @InvoiceEntree 
-                    where IsoNumber=@IsoNumber and InvoiceNumber = @InvoiceNumber;";
+                string insertQueryIntoInvoiceDetails = @"Update InvoiceDetails set PONumber=@PONumber, InvoiceValue1=@InvoiceValue1, InvoiceValue2=@InvoiceValue2, 
+                Currency1=@Currency1, Currency2=@Currency2, InvoiceDate=@InvoiceDate, InvoiceReceiptDate=@InvoiceReceiptDate, Requester=@Requester,
+                VendorName=@VendorName, SendToRequesterDate = @SendToRequesterDate, SendToVendorDate = @SendToVendorDate, Area = @Area , InvoiceEntree = @InvoiceEntree where IsoNumber=@IsoNumber and InvoiceNumber = @InvoiceNumber;";
                 using (SqlCommand command = new SqlCommand(insertQueryIntoInvoiceDetails, connection))
                 {
                     command.Parameters.AddWithValue("@UserName", userName);
                     command.Parameters.AddWithValue("@IsoNumber", isoNumber);
                     command.Parameters.AddWithValue("@IsoDate", isoDate);
                     command.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber);
+                    command.Parameters.AddWithValue("@PONumber", poNumber ?? "");
                     command.Parameters.AddWithValue("@InvoiceValue1", Convert.ToDecimal(invoiceValue1));
                     command.Parameters.AddWithValue("@InvoiceValue2",
                         string.IsNullOrWhiteSpace(invoiceValue2) || invoiceValue2 == "null"
                             ? (object)DBNull.Value
                             : Convert.ToDecimal(invoiceValue2));
 
-                    command.Parameters.AddWithValue("@InvoiceValue3",
-                        string.IsNullOrWhiteSpace(invoiceValue3) || invoiceValue3 == "null"
-                            ? (object)DBNull.Value
-                            : Convert.ToDecimal(invoiceValue3));
+                    
                     command.Parameters.AddWithValue("@Currency1", currency1);
                     command.Parameters.AddWithValue("@Currency2", currency2 ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@Currency3", currency3 ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@InvoiceDate", invoiceDate);
                     command.Parameters.AddWithValue("@InvoiceReceiptDate", invoiceReceiptDate);
                     command.Parameters.AddWithValue("@Requester", requester ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@VendorName", vendorName);
-                    command.Parameters.AddWithValue("@BackToRequester", backToRequester);
-                    command.Parameters.AddWithValue("@ToRequesterDate", toRequesterDate ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@SendToRequesterDate", sendToRequesterDate);
+                    command.Parameters.AddWithValue("@SendToVendorDate", sendToVendorDate ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@Area", area ?? (object)DBNull.Value);
                     command.Parameters.AddWithValue("@InvoiceEntree", userName ?? (object)DBNull.Value);
 
@@ -374,17 +611,24 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult Exchange()
         {
+            if (!CheckPermission().Contains("Create"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لاضافة طلب صرف";
+                return View("Failed");
+            }
+            string area = (CheckPermittedArea() == "alex") ? "المعدية" : "الرئيسي";
             DateTime currentDateOnly = DateTime.Now.Date;
             ViewBag.IsoDate = currentDateOnly.ToString("yyyy-MM-dd");
             
             using (SqlConnection connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                string getIso = @"SELECT MAX(ExchangeNumber) FROM InvoiceDetails";
-                int NextExchangeNumber = 100;
+                string getIso = @"SELECT MAX(ExchangeNumber) FROM InvoiceDetails where Area = @Area";
+                int NextExchangeNumber = area == "الرئيسي" ? 100 : 1100;
                 // Execute your SQL query using the connection
                 using (SqlCommand command = new SqlCommand(getIso, connection))
                 {
+                    command.Parameters.AddWithValue("@Area", area);
                     object result = command.ExecuteScalar();
 
                     // Check if a valid number was returned
@@ -406,7 +650,6 @@ namespace FollowInvoices.Controllers
         public IActionResult ExecuteExchange(string vendorName, string invoiceNumbers, string exchangeNumber, string exchangeCase, string employeeName, 
              string invoiceValue, string currency, string backToRequester, string toRequesterDate)
         {
-
             try
             {
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -424,19 +667,61 @@ namespace FollowInvoices.Controllers
                             // Add parameters to the command
                             command.Parameters.AddWithValue("@VendorName", vendorName);
                             command.Parameters.AddWithValue("@InvoiceNumber", _invoiceNumber.Trim());
-
                             // Execute the command and retrieve data
                             using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                             {
                                 DataTable dt = new DataTable();
                                 adapter.Fill(dt);
+                                DataRow firstRow = dt.Rows[0];
+                                string firstExchangeNo = firstRow["ExchangeNumber"]?.ToString();
                                 // Check if the DataTable has data
                                 if (!(dt.Rows.Count > 0))
                                 {
                                     ViewBag.ErrorMessage = "يجب اضافة الفاتورة أولا";
                                     return View("Failed");
                                 }
+                                else if (!string.IsNullOrEmpty(firstExchangeNo) && !CheckPermission().Contains("Change"))
+                                {
+                                    ViewBag.ErrorMessage = "ليس لديك صلاحية لتعديل طلب صرف";
+                                    return View("Failed");
+                                    //foreach (DataRow row in dt.Rows)
+                                    //{
+                                    //    // Access row data - example:
+                                    //    string invoiceNo = row["InvoiceNumber"]?.ToString();
+                                    //    string vendor = row["VendorName"]?.ToString();
+                                    //    // ... process other columns as needed
+
+                                    //    // Or if you just need the first row:
+                                    //    // DataRow firstRow = dt.Rows[0];
+                                    //    // string firstInvoiceNo = firstRow["InvoiceNumber"]?.ToString();
+                                    //}                                                                    
+                                }
                             }
+                        }
+                        string _area = (CheckPermittedArea() == "alex") ? "المعدية" : "الرئيسي";
+                        string getIso = @"SELECT MAX(ExchangeNumber) FROM InvoiceDetails where Area = @Area";
+                        int NextExchangeNumber = _area == "الرئيسي" ? 100 : 1100;
+                        // Execute your SQL query using the connection
+                        using (SqlCommand command = new SqlCommand(getIso, connection))
+                        {
+                            command.Parameters.AddWithValue("@Area", _area);
+                            object result = command.ExecuteScalar();
+
+                            // Check if a valid number was returned
+                            if (result != DBNull.Value && result != null)
+                            {
+                                int maxIsoNumber = Convert.ToInt32(result);
+                                int nextIsoNumber = maxIsoNumber + 1;
+
+                                // Pass the next IsoNumber to the view using ViewBag
+                                ViewBag.NextExchangeNumber = nextIsoNumber;
+                                exchangeNumber = nextIsoNumber.ToString();
+                            }
+                            else
+                            {
+                                ViewBag.NextExchangeNumber = NextExchangeNumber;
+                            }
+
                         }
                         // Create the update query with parameters to prevent SQL injection
                         string insertQuery = @"UPDATE InvoiceDetails SET EmployeeName = @EmployeeName , ExchangeNumber = @ExchangeNumber , 
@@ -474,10 +759,15 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FinalizeExchange()
         {
+            if (!CheckPermission().Contains("Create"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لانهاء طلب صرف";
+                return View("Failed");
+            }
             return View();
         }
         [HttpGet]
-        public IActionResult ExecuteFinalizeExchange(string vendorName, string invoiceNumbers, string exchangeCase, string finalizeExchangeDate)
+        public IActionResult ExecuteFinalizeExchange(string vendorName, string invoiceNumbers, string exchangeCase, string finalizeExchangeDate, string invoiceExchangeValue)
         {
             try
             {
@@ -502,16 +792,23 @@ namespace FollowInvoices.Controllers
                             {
                                 DataTable dt = new DataTable();
                                 adapter.Fill(dt);
+                                DataRow firstRow = dt.Rows[0];
+                                string firstExchangeNo = firstRow["FinalizeExchangeCase"]?.ToString();
                                 // Check if the DataTable has data
                                 if (!(dt.Rows.Count > 0))
                                 {
                                     ViewBag.ErrorMessage = "يجب اضافة الفاتورة أولا";
                                     return View("Failed");
                                 }
+                                else if (!string.IsNullOrEmpty(firstExchangeNo) && !CheckPermission().Contains("Change"))
+                                {
+                                    ViewBag.ErrorMessage = "ليس لديك صلاحية لتعديل طلب صرف";
+                                    return View("Failed");
+                                }
                             }
                         }
                         // Create the update query with parameters to prevent SQL injection
-                        string insertQuery = @"UPDATE InvoiceDetails SET FinalizeExchangeCase = @ExchangeCase, FinalizeExchangeDate = @FinalizeExchangeDate WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
+                        string insertQuery = @"UPDATE InvoiceDetails SET FinalizeExchangeCase = @ExchangeCase, FinalizeExchangeDate = @FinalizeExchangeDate, InvoiceExchangeValue = @InvoiceExchangeValue WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
 
                         // Execute the update query using a parameterized SqlCommand
                         using (SqlCommand command = new SqlCommand(insertQuery, connection))
@@ -521,6 +818,7 @@ namespace FollowInvoices.Controllers
                             command.Parameters.AddWithValue("@InvoiceNumber", _invoiceNumber.Trim());
                             command.Parameters.AddWithValue("@ExchangeCase", exchangeCase);
                             command.Parameters.AddWithValue("@FinalizeExchangeDate", finalizeExchangeDate);
+                            command.Parameters.AddWithValue("@InvoiceExchangeValue", invoiceExchangeValue);
 
                             command.ExecuteNonQuery();
                         }
@@ -542,9 +840,6 @@ namespace FollowInvoices.Controllers
         //[HttpGet]
         //public IActionResult ExecuteEdit(string id, string invoiceStatus, string invoiceSapStatus)
         //{
-
-        //    
-
         //    using (SqlConnection connection = new SqlConnection(_connectionString))
         //    {
         //        connection.Open();
@@ -698,11 +993,14 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByTasweyatReportView()
         {
+            ViewBag.ViewName = "تسويات";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByTasweyatReport(string date)
         {
+            ViewBag.ViewName = "تسويات";
+            ViewBag.FilterDate = date;
             try
             {
                 string id = "تسويات";
@@ -710,7 +1008,7 @@ namespace FollowInvoices.Controllers
                 // Connection string
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو' \r\nFROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and InvoiceDate = @InvoiceDate";
+                string sqlQuery = "SELECT \r\n  UserName AS 'اسم المستخدم',\r\n                EmployeeName AS 'اسم الموظف',\r\n                Requester AS 'الجهه الطالبه',\r\n                IsoNumber AS 'رقم الايزو',\r\n                FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ استلام الفاتورة',\r\n                ExchangeCurrency AS 'العملة',\r\n                InvoiceExchangeValue AS 'المبلغ',\r\n                FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n                InvoiceNumber AS 'رقم الفاتورة',\r\n                FORMAT(FinalizeExchangeDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ التسليم',\r\n                FinalizeExchangeCase AS 'نوع التسليم',\r\n                VendorName AS 'اسم المورد',\r\n                ExchangeNumber AS 'رقم طلب الصرف' \r\nFROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and FinalizeExchangeDate = @InvoiceDate order by  ExchangeNumber asc";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -765,11 +1063,14 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterBy7sabatReportView()
         {
+            ViewBag.ViewName = "الحسابات";
             return View();
         }
         [HttpGet]
         public IActionResult FilterBy7sabatReport(string date)
         {
+            ViewBag.ViewName = "الحسابات";
+            ViewBag.FilterDate = date;
             try
             {
                 string id = "الحسابات";
@@ -777,7 +1078,7 @@ namespace FollowInvoices.Controllers
                 // Connection string
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو' \r\nFROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and InvoiceDate = @InvoiceDate";
+                string sqlQuery = "SELECT \r\n UserName AS 'اسم المستخدم',\r\n                EmployeeName AS 'اسم الموظف',\r\n                Requester AS 'الجهه الطالبه',\r\n                IsoNumber AS 'رقم الايزو',\r\n                FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ استلام الفاتورة',\r\n                ExchangeCurrency AS 'العملة',\r\n                InvoiceExchangeValue AS 'المبلغ',\r\n                FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n                InvoiceNumber AS 'رقم الفاتورة',\r\n                FORMAT(FinalizeExchangeDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ التسليم',\r\n                FinalizeExchangeCase AS 'نوع التسليم',\r\n                VendorName AS 'اسم المورد',\r\n                ExchangeNumber AS 'رقم طلب الصرف'  \r\nFROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and FinalizeExchangeDate = @InvoiceDate order by  ExchangeNumber asc";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -831,11 +1132,14 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByMasrafyaReportView()
         {
+            ViewBag.ViewName = "المصرفية";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByMasrafyaReport(string date)
         {
+            ViewBag.ViewName = "المصرفية";
+            ViewBag.FilterDate = date;
             try
             {
                 string id = "المصرفية";
@@ -843,7 +1147,7 @@ namespace FollowInvoices.Controllers
                 // Connection string
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو' \r\nFROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and InvoiceDate = @InvoiceDate";
+                string sqlQuery = "SELECT \r\n  UserName AS 'اسم المستخدم',\r\n                EmployeeName AS 'اسم الموظف',\r\n                Requester AS 'الجهه الطالبه',\r\n                IsoNumber AS 'رقم الايزو',\r\n                FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ استلام الفاتورة',\r\n                ExchangeCurrency AS 'العملة',\r\n                InvoiceExchangeValue AS 'المبلغ',\r\n                FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n                InvoiceNumber AS 'رقم الفاتورة',\r\n                FORMAT(FinalizeExchangeDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ التسليم',\r\n                FinalizeExchangeCase AS 'نوع التسليم',\r\n                VendorName AS 'اسم المورد',\r\n                ExchangeNumber AS 'رقم طلب الصرف' FROM \r\n    InvoiceDetails where FinalizeExchangeCase = @Code and FinalizeExchangeDate = @InvoiceDate order by  ExchangeNumber asc";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -897,16 +1201,18 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult AllVoicesReportView()
         {
+            ViewBag.ViewName = "استعلام عن الكل";
             return View();
         }
         [HttpGet]
         public IActionResult AllVoicesReport()
         {
+            ViewBag.ViewName = "استعلام عن الكل";
             try
             {
                 // SQL query with parameterized query
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id";
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    VendorName AS 'اسم المورد', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    VendorName AS 'اسم المورد', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -955,18 +1261,20 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByExchangeCaseWithDateReportView()
         {
+            ViewBag.ViewName = "استعلام بحالة طلب الصرف";
             return View();
         }
         [HttpGet]
-        public IActionResult FilterByExchangeCaseWithDateReport(string id, string date)
+        public IActionResult FilterByExchangeCaseWithDateReport(string id)
         {
+            ViewBag.ViewName = "استعلام بحالة طلب الصرف";
             try
             {
                 ViewBag.Code = id;
                 // Connection string
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو'\r\nFROM \r\n    InvoiceDetails where ExchangeCase = @Code and InvoiceDate = @InvoiceDate";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو'\r\nFROM \r\n    InvoiceDetails where ExchangeCase = @Code";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -977,7 +1285,6 @@ namespace FollowInvoices.Controllers
                     {
                         // Add parameters to the command
                         command.Parameters.AddWithValue("@Code", id);
-                        command.Parameters.AddWithValue("@InvoiceDate", date);
 
                         // Execute the command and retrieve data
                         using (SqlDataAdapter adapter = new SqlDataAdapter(command))
@@ -1020,11 +1327,13 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterBySapTempCodeReportView()
         {
+            ViewBag.ViewName = "استعلام برقم الايزو";
             return View();
         }
         [HttpGet]
         public IActionResult FilterBySapTempCodeReport(string id)
         {
+            ViewBag.ViewName = "استعلام برقم الايزو";
             try
             {
                 ViewBag.Code = id;
@@ -1032,7 +1341,7 @@ namespace FollowInvoices.Controllers
 
                 string checkInvoiceValue2 = "SELECT InvoiceValue2 \r\nFROM \r\n    InvoiceDetails where IsoNumber = @Code";
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\nIsoNumber AS 'رقم الايزو' \r\nFROM \r\n    InvoiceDetails where IsoNumber = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\nIsoNumber AS 'رقم الايزو' \r\nFROM \r\n    InvoiceDetails where IsoNumber = @Code";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -1096,11 +1405,13 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByInvoiceNumberReportView()
         {
+            ViewBag.ViewName = "استعلام برقم الفاتورة";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByInvoiceNumberReport(string id)
         {
+            ViewBag.ViewName = "استعلام برقم الفاتورة";
             try
             {
                 ViewBag.Code = id;
@@ -1109,7 +1420,7 @@ namespace FollowInvoices.Controllers
                 string queryCheckInvoiceValue2 = "SELECT InvoiceValue2 AS 'قيمة الفاتورة  ٢' FROM InvoiceDetails  where InvoiceNumber = @Code";
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency2 AS 'العملة ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة ٢', \r\n    Currency1 AS 'العملة ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة ١', \r\n InvoiceNumber AS 'رقم الفاتورة', \r\n    VendorName AS 'اسم المورد', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceNumber = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة ٢', \r\n    Currency1 AS 'العملة ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة ١', \r\n InvoiceNumber AS 'رقم الفاتورة', \r\n    VendorName AS 'اسم المورد', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceNumber = @Code";
                 //string sqlQuery = "SELECT \r\n    one.EmployeeName As 'اسم الموظف',\r\n FORMAT(two.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n    two.InvoiceStatus AS 'حالة القاتورة',\r\n    one.Requester AS 'الجهه الطالبة',\r\n    FORMAT(one.Dat, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستحقاق', \r\n    one.SapStatus AS 'حالة الفاتورة على ساب', \r\n    one.Currency AS 'العملة', \r\n    one.Valu AS 'قيمة الفاتورة', \r\n    one.VendorName AS 'اسم المورد', \r\n    one.VendorCode AS 'كود المورد',\r\n    one.Contrac AS 'وصف العقد', \r\n    one.Descriptio AS 'وصف الفاتورة', \r\n    one.InvoiceNumber AS 'رقم الفاتورة', \r\n    one.IsoDate AS 'تاريخ الايزو', \r\n    one.IsoNumber AS 'رقم الايزو', \r\n    one.Id AS 'رقم استعلام ساب'\r\nFROM \r\n    InvoiceDetails AS one \r\nJOIN \r\n    [dbo].[History] AS two ON one.InvoiceNumber = two.Id \r\nWHERE \r\n    one.Id = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -1174,17 +1485,20 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByExchangeNumberReportView()
         {
+            ViewBag.ViewName = "استعلام برقم طلب الصرف";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByExchangeNumberReport(string id)
         {
+            ViewBag.ViewName = "استعلام برقم طلب الصرف";
+            ViewBag.FilterDate = id;
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where ExchangeNumber = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where ExchangeNumber = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1237,17 +1551,19 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByInvoiceValueReportView()
         {
+            ViewBag.ViewName = "استعلام بقيمة الفاتورة";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByInvoiceValueReport(string id)
         {
+            ViewBag.ViewName = "استعلام بقيمة الفاتورة";
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceExchangeValue = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceExchangeValue = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1300,17 +1616,19 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByRequesterReportView()
         {
+            ViewBag.ViewName = "استعلام بالجهة الطالبة";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByRequesterReport(string id)
         {
+            ViewBag.ViewName = "استعلام بالجهة الطالبة";
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where Requester = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where Requester = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1363,17 +1681,19 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByVendorReportView()
         {
+            ViewBag.ViewName = "استعلام باسم المورد";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByVendorReport(string id)
         {
+            ViewBag.ViewName = "استعلام باسم المورد";
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where VendorName = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where VendorName = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1426,17 +1746,19 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByEmployeeReportView()
         {
+            ViewBag.ViewName = "استعلام باسم الموظف";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByEmployeeReport(string id)
         {
+            ViewBag.ViewName = "استعلام باسم الموظف";
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where EmployeeName = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where EmployeeName = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1489,17 +1811,20 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByInvoiceDateReportView()
         {
+            ViewBag.ViewName = "استعلام بتاريخ الفاتورة";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByInvoiceDateReport(string id)
         {
+            ViewBag.ViewName = "استعلام بتاريخ الفاتورة";
+            ViewBag.FilterDate = id;
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceDate = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceDate = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1552,17 +1877,20 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult FilterByInvoiceReceiptDateReportView()
         {
+            ViewBag.ViewName = "استعلام بتاريخ استلام الفاتورة";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByInvoiceReceiptDateReport(string id)
         {
+            ViewBag.ViewName = "استعلام بتاريخ استلام الفاتورة";
+            ViewBag.FilterDate = id;
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceReceiptDate = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where InvoiceReceiptDate = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1613,19 +1941,153 @@ namespace FollowInvoices.Controllers
                 return View("Failed");
             }            
         }
+        public IActionResult FilterByBackToVendorReportView()
+        {
+            ViewBag.ViewName = "استعلام عن ارجاع فاتورة للمورد";
+            return View();
+        }
+        [HttpGet]
+        public IActionResult FilterByBackToVendorReport(string id)
+        {
+            ViewBag.ViewName = "استعلام عن ارجاع فاتورة للمورد";
+            try
+            {
+                string sqlQuery = "";
+                if (id == "كل الموردين")
+                {
+                    sqlQuery = "SELECT SendToVendorDate As 'تاريخ ارجاع الفاتورة للمورد', \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where SendToVendorDate is not null";
+                }
+                else
+                {
+                    sqlQuery = "SELECT SendToVendorDate As 'تاريخ ارجاع الفاتورة للمورد', \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where VendorName = @VendorName and SendToVendorDate is not null";
+                }                
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    // Execute your SQL query using the connection
+                    using (SqlCommand command = new SqlCommand(sqlQuery, connection))
+                    {
+                        // Add parameters to the command
+                        command.Parameters.AddWithValue("@VendorName", id);
+                        // Execute the command and retrieve data
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            DataTable dt = new DataTable();
+                            adapter.Fill(dt);
+
+                            // Create a new DataTable to hold distinct values
+                            DataTable distinctDt = new DataTable();
+
+                            // Add columns to the new DataTable based on the original DataTable's schema
+                            foreach (DataColumn column in dt.Columns)
+                            {
+                                distinctDt.Columns.Add(column.ColumnName, column.DataType);
+                            }
+
+                            // Get distinct rows from the original DataTable
+                            var distinctRows = dt.AsEnumerable().Distinct(DataRowComparer.Default);
+
+                            // Add distinct rows to the new DataTable
+                            foreach (DataRow row in distinctRows)
+                            {
+                                distinctDt.Rows.Add(row.ItemArray);
+                            }
+
+                            // Pass the distinct DataTable to the ViewBag
+                            ViewBag.DataTable = distinctDt;
+
+                            return View("ViewResult");
+                        }
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ViewBag.ErrorMessage = "يرجي ادخال البيانات المطلوبة بشكل صحيح";
+                return View("Failed");
+            }
+        }
+        public IActionResult FilterByBackToRequesterReportView()
+        {
+            ViewBag.ViewName = "استعلام عن ارجاع طلب الصرف للجهة الطالبة";
+            return View();
+        }
+        [HttpGet]
+        public IActionResult FilterByBackToRequesterReport()
+        {
+            ViewBag.ViewName = "استعلام عن ارجاع طلب الصرف للجهة الطالبة";
+            try
+            {
+
+                // SQL query with parameterized query
+                string sqlQuery = "SELECT SendToRequesterDate As 'تاريخ ارجاع طلب الصرف للجهة الطالبة', \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where ToRequesterDate is not null";
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    // Execute your SQL query using the connection
+                    using (SqlCommand command = new SqlCommand(sqlQuery, connection))
+                    {
+                        // Add parameters to the command
+
+                        // Execute the command and retrieve data
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            DataTable dt = new DataTable();
+                            adapter.Fill(dt);
+
+                            // Create a new DataTable to hold distinct values
+                            DataTable distinctDt = new DataTable();
+
+                            // Add columns to the new DataTable based on the original DataTable's schema
+                            foreach (DataColumn column in dt.Columns)
+                            {
+                                distinctDt.Columns.Add(column.ColumnName, column.DataType);
+                            }
+
+                            // Get distinct rows from the original DataTable
+                            var distinctRows = dt.AsEnumerable().Distinct(DataRowComparer.Default);
+
+                            // Add distinct rows to the new DataTable
+                            foreach (DataRow row in distinctRows)
+                            {
+                                distinctDt.Rows.Add(row.ItemArray);
+                            }
+
+                            // Pass the distinct DataTable to the ViewBag
+                            ViewBag.DataTable = distinctDt;
+
+                            return View("ViewResult");
+                        }
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ViewBag.ErrorMessage = "يرجي ادخال البيانات المطلوبة بشكل صحيح";
+                return View("Failed");
+            }
+        }
         public IActionResult FilterByAreaReportView()
         {
+            ViewBag.ViewName = "استعلام بالموقع";
             return View();
         }
         [HttpGet]
         public IActionResult FilterByAreaReport(string id)
         {
+            ViewBag.ViewName = "استعلام بالموقع";
             try
             {
                 ViewBag.Code = id;
 
                 // SQL query with parameterized query
-                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة', \r\n    Currency3 AS 'العملة - 3', \r\n    InvoiceValue3 AS 'قيمة الفاتورة - 3', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where EmployeeName = @Code";
+                string sqlQuery = "SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\nFROM \r\n    InvoiceDetails where Area = @Code";
 
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
@@ -1675,6 +2137,72 @@ namespace FollowInvoices.Controllers
                 ViewBag.ErrorMessage = "يرجي ادخال البيانات المطلوبة بشكل صحيح";
                 return View("Failed");
             }            
+        }
+        public IActionResult FilterByAreaAndDateReportView()
+        {
+            ViewBag.ViewName = "استعلام بالموقع و التاريخ";
+            return View();
+        }
+        [HttpGet]
+        public IActionResult FilterByAreaAndDateReport(string id, string date)
+        {
+            ViewBag.ViewName = "استعلام بالموقع و التاريخ";
+            ViewBag.FilterDate = date;
+            try
+            {
+                ViewBag.Code = id;
+
+                // SQL query with parameterized query
+                string sqlQuery = $"SELECT \r\n  UserName As 'اسم المستخدم', \r\n  EmployeeName As 'اسم الموظف', ExchangeNumber As 'رقم طلب الصرف',\r\n FORMAT(InvoiceReceiptDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الاستلام',\r\n FORMAT(InvoiceDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الفاتورة',\r\n    FORMAT(ToRequesterDate, 'dd MMMM yyyy', 'ar-EG') AS 'تاريخ الارسال للجهة الطالبة',\r\n    Requester AS 'الجهه الطالبة',\r\n                ExchangeCurrency AS 'عملة طلب الصرف',\r\n                InvoiceExchangeValue AS 'مبلغ طلب الصرف', \r\n    Currency2 AS 'العملة  ٢', \r\n    InvoiceValue2 AS 'قيمة الفاتورة  ٢', \r\n    Currency1 AS 'العملة  ١', \r\n    InvoiceValue1 AS 'قيمة الفاتورة  ١', \r\n    VendorName AS 'اسم المورد', \r\n    InvoiceNumber AS 'رقم الفاتورة', \r\n    IsoDate AS 'تاريخ الايزو', \r\n    IsoNumber AS 'رقم الايزو'\r\n, FinalizeExchangeDate AS 'تاريخ طلب الصرف'\r\nFROM \r\n    InvoiceDetails where Area = @Code and FinalizeExchangeDate = @FinalizeExchangeDate";
+
+                using (SqlConnection connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    // Execute your SQL query using the connection
+                    using (SqlCommand command = new SqlCommand(sqlQuery, connection))
+                    {
+                        // Add parameters to the command
+                        command.Parameters.AddWithValue("@Code", id);
+                        command.Parameters.AddWithValue("@FinalizeExchangeDate", date);
+                        // Execute the command and retrieve data
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            DataTable dt = new DataTable();
+                            adapter.Fill(dt);
+
+                            // Create a new DataTable to hold distinct values
+                            DataTable distinctDt = new DataTable();
+
+                            // Add columns to the new DataTable based on the original DataTable's schema
+                            foreach (DataColumn column in dt.Columns)
+                            {
+                                distinctDt.Columns.Add(column.ColumnName, column.DataType);
+                            }
+
+                            // Get distinct rows from the original DataTable
+                            var distinctRows = dt.AsEnumerable().Distinct(DataRowComparer.Default);
+
+                            // Add distinct rows to the new DataTable
+                            foreach (DataRow row in distinctRows)
+                            {
+                                distinctDt.Rows.Add(row.ItemArray);
+                            }
+
+                            // Pass the distinct DataTable to the ViewBag
+                            ViewBag.DataTable = distinctDt;
+
+                            return View("ViewResult");
+                        }
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                ViewBag.ErrorMessage = "يرجي ادخال البيانات المطلوبة بشكل صحيح";
+                return View("Failed");
+            }
         }
         private Cell CreateCell(string value)
         {
@@ -1684,6 +2212,11 @@ namespace FollowInvoices.Controllers
         }
         public IActionResult Delete()
         {
+            if (!CheckPermission().Contains("Change"))
+            {
+                ViewBag.ErrorMessage = "ليس لديك صلاحية لحذف فاتورة";
+                return View("Failed");
+            }
             return View();
         }
         [HttpGet]
@@ -1778,7 +2311,6 @@ namespace FollowInvoices.Controllers
                 return StatusCode(500, "Error fetching data: " + ex.Message);
             }            
         }        
-
         [HttpGet]
         public IActionResult GetVendorName(string vendorCode)
         {
@@ -1896,6 +2428,7 @@ namespace FollowInvoices.Controllers
         [HttpGet]
         public JsonResult GetInvoiceData(string isoNumber, string invoiceNumber)
         {
+            ViewBag.Flag = "Proccessing function GetInvoiceData...";
             if (string.IsNullOrEmpty(invoiceNumber))
             {
                 return Json(new { success = false, message = "Invoice number is required." });
@@ -1907,9 +2440,9 @@ namespace FollowInvoices.Controllers
                 {
                     connection.Open();
 
-                    string query = "SELECT InvoiceValue1, Currency1, InvoiceValue2, Currency2, InvoiceValue3, Currency3" +
-                        ", VendorName , InvoiceDate, InvoiceReceiptDate, Requester, ToRequesterDate" +
-                        ", EmployeeName, ExchangeNumber, InvoiceExchangeValue, ExchangeCurrency, IsoDate " +
+                    string query = "SELECT PONumber, InvoiceValue1, Currency1, InvoiceValue2, Currency2" +
+                        ", VendorName , InvoiceDate, InvoiceReceiptDate, Requester, SendToRequesterDate" +
+                        ", SendToVendorDate, IsoDate, Area " +
                         "FROM InvoiceDetails WHERE IsoNumber = @IsoNumber and InvoiceNumber = @InvoiceNumber";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -1926,26 +2459,24 @@ namespace FollowInvoices.Controllers
                                 reader.Read();
                                 var invoiceData = new
                                 {
+                                    PONumber = reader["PONumber"]?.ToString(),
                                     invoiceValue1 = reader["InvoiceValue1"]?.ToString(),
                                     currency1 = reader["Currency1"]?.ToString(),
                                     invoiceValue2 = reader["InvoiceValue2"]?.ToString(),
                                     currency2 = reader["Currency2"]?.ToString(),
-                                    invoiceValue3 = reader["InvoiceValue3"]?.ToString(),
-                                    currency3 = reader["Currency3"]?.ToString(),
                                     vendorName = reader["VendorName"]?.ToString(),
                                     invoiceDate = reader["InvoiceDate"] is DBNull ? null
                   : Convert.ToDateTime(reader["InvoiceDate"]).ToString("yyyy-MM-dd"),
                                     invoiceReceiptDate = reader["InvoiceReceiptDate"] is DBNull ? null
                          : Convert.ToDateTime(reader["InvoiceReceiptDate"]).ToString("yyyy-MM-dd"),
                                     requester = reader["Requester"]?.ToString(),
-                                    toRequesterDate = reader["ToRequesterDate"] is DBNull ? null
-                      : Convert.ToDateTime(reader["ToRequesterDate"]).ToString("yyyy-MM-dd"),
-                                    employeeName = reader["EmployeeName"]?.ToString(),
-                                    exchangeNumber = reader["ExchangeNumber"]?.ToString(),
-                                    invoiceExchangeValue = reader["InvoiceExchangeValue"]?.ToString(),
-                                    exchangeCurrency = reader["ExchangeCurrency"]?.ToString(),                                   
+                                    sendtoRequesterDate = reader["SendToRequesterDate"] is DBNull ? null
+                      : Convert.ToDateTime(reader["SendToRequesterDate"]).ToString("yyyy-MM-dd"),
+                                    sendtoVendorDate = reader["SendToVendorDate"] is DBNull ? null
+                      : Convert.ToDateTime(reader["SendToVendorDate"]).ToString("yyyy-MM-dd"),
                                     isoDate = reader["IsoDate"] is DBNull ? null
-              : Convert.ToDateTime(reader["IsoDate"]).ToString("yyyy-MM-dd")
+              : Convert.ToDateTime(reader["IsoDate"]).ToString("yyyy-MM-dd"),
+                                    area = reader["Area"]?.ToString()
                                 };
 
 
@@ -1978,7 +2509,7 @@ namespace FollowInvoices.Controllers
                 {
                     connection.Open();
                     var invoiceData = new Invoicedata();
-                    string query = "SELECT EmployeeName, ExchangeCurrency, BackToRequester, ToRequesterDate, Area, InvoiceEntree FROM InvoiceDetails WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
+                    string query = "SELECT EmployeeName, ExchangeCurrency, BackToRequester, ToRequesterDate, Area, InvoiceEntree, ExchangeCase, ExchangeNumber FROM InvoiceDetails WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
                     
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -2000,6 +2531,8 @@ namespace FollowInvoices.Controllers
                     : Convert.ToDateTime(reader["ToRequesterDate"]).ToString("yyyy-MM-dd");
                                 invoiceData.area = reader["Area"]?.ToString();
                                 invoiceData.invoiceEntree = reader["InvoiceEntree"]?.ToString();
+                                invoiceData.exchangeCase = reader["ExchangeCase"]?.ToString();
+                                invoiceData.exchangeNumber = reader["ExchangeNumber"]?.ToString();
 
 
 
@@ -2070,7 +2603,7 @@ namespace FollowInvoices.Controllers
                 {
                     connection.Open();
                     var invoiceData = new Invoicedata();
-                    string query = "SELECT EmployeeName, ExchangeNumber, ExchangeCurrency, BackToRequester, ToRequesterDate, Area, InvoiceEntree FROM InvoiceDetails WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
+                    string query = "SELECT EmployeeName, ExchangeNumber, ExchangeCurrency, BackToRequester, ToRequesterDate, Area, InvoiceEntree, FinalizeExchangeCase, FinalizeExchangeDate FROM InvoiceDetails WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
@@ -2093,7 +2626,9 @@ namespace FollowInvoices.Controllers
                     : Convert.ToDateTime(reader["ToRequesterDate"]).ToString("yyyy-MM-dd");
                                 invoiceData.area = reader["Area"]?.ToString();
                                 invoiceData.invoiceEntree = reader["InvoiceEntree"]?.ToString();
-
+                                invoiceData.finalizeExchangeCase = reader["FinalizeExchangeCase"]?.ToString();
+                                invoiceData.finalizeExchangeDate = reader["FinalizeExchangeDate"] is DBNull ? null
+                    : Convert.ToDateTime(reader["FinalizeExchangeDate"]).ToString("yyyy-MM-dd");
 
 
                                 //return Json(new { success = true, details = invoiceData });
@@ -2163,10 +2698,10 @@ namespace FollowInvoices.Controllers
                 {
                     connection.Open();
 
-                    string query = "SELECT InvoiceValue1, Currency1, InvoiceValue2, Currency2, InvoiceValue3, Currency3" +
+                    string query = "SELECT InvoiceValue1, Currency1, InvoiceValue2, Currency2" +
                         ", InvoiceDate, InvoiceReceiptDate, Requester, ToRequesterDate" +
                         ", EmployeeName, ExchangeNumber, InvoiceExchangeValue1, ExchangeCurrency1" +
-                        ", InvoiceExchangeValue2, ExchangeCurrency2, InvoiceExchangeValue3, ExchangeCurrency3, IsoDate " +
+                        ", InvoiceExchangeValue2, ExchangeCurrency2, IsoDate " +
                         "FROM InvoiceDetails WHERE VendorName = @VendorName and InvoiceNumber = @InvoiceNumber";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -2187,8 +2722,6 @@ namespace FollowInvoices.Controllers
                                     currency1 = reader["Currency1"]?.ToString(),
                                     invoiceValue2 = reader["InvoiceValue2"]?.ToString(),
                                     currency2 = reader["Currency2"]?.ToString(),
-                                    invoiceValue3 = reader["InvoiceValue3"]?.ToString(),
-                                    currency3 = reader["Currency3"]?.ToString(),
                                     invoiceDate = reader["InvoiceDate"] is DBNull ? null
                   : Convert.ToDateTime(reader["InvoiceDate"]).ToString("yyyy-MM-dd"),
                                     invoiceReceiptDate = reader["InvoiceReceiptDate"] is DBNull ? null
@@ -2202,8 +2735,6 @@ namespace FollowInvoices.Controllers
                                     exchangeCurrency1 = reader["ExchangeCurrency1"]?.ToString(),
                                     invoiceExchangeValue2 = reader["InvoiceExchangeValue2"]?.ToString(),
                                     exchangeCurrency2 = reader["ExchangeCurrency2"]?.ToString(),
-                                    invoiceExchangeValue3 = reader["InvoiceExchangeValue3"]?.ToString(),
-                                    exchangeCurrency3 = reader["ExchangeCurrency3"]?.ToString(),
                                     isoDate = reader["IsoDate"] is DBNull ? null
               : Convert.ToDateTime(reader["IsoDate"]).ToString("yyyy-MM-dd")
                                 };

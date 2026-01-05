@@ -89,7 +89,7 @@ namespace FollowInvoices.Controllers
 			Console.WriteLine("username is: " + username);
 			Console.WriteLine("password is: " + password);
 			username = username.ToLower().Trim();
-			if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
 			{
 				return Json(new { success = false, message = "اسم المستخدم والرقم السري مطلوبان." });
 			}
@@ -147,7 +147,7 @@ namespace FollowInvoices.Controllers
 			using (SqlConnection conn = new SqlConnection(_connectionString))
 			{
 				await conn.OpenAsync();
-				var command = new SqlCommand("SELECT PasswordHash FROM Users WHERE Username = @username", conn);
+				var command = new SqlCommand("SELECT PasswordHash FROM Users WHERE DisplayName = @username", conn);
 				command.Parameters.AddWithValue("@username", username);
 				var storedPassword = (string?)await command.ExecuteScalarAsync();
 
@@ -156,7 +156,7 @@ namespace FollowInvoices.Controllers
 					return Json(new { success = false, message = "الرقم السري الحالي غير صحيح." });
 				}
 
-				var updateCommand = new SqlCommand("UPDATE Users SET PasswordHash = @newPassword WHERE Username = @username", conn);
+				var updateCommand = new SqlCommand("UPDATE Users SET PasswordHash = @newPassword WHERE DisplayName = @username", conn);
 				updateCommand.Parameters.AddWithValue("@newPassword", newPassword);
 				updateCommand.Parameters.AddWithValue("@username", username);
 				await updateCommand.ExecuteNonQueryAsync();

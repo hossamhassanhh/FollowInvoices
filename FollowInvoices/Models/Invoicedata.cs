@@ -10,5 +10,9 @@
         public  string area { get; set; }
         public  string invoiceEntree { get; set; }
         public  decimal invoiceExchangeValue { get; set; }
+        public  string finalizeExchangeCase { get; set; }
+        public  string finalizeExchangeDate { get; set; }
+        public  string exchangeCase { get; set; }
+        public  string PONumber { get; set; }
 }
 }

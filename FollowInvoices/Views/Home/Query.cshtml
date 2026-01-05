@@ -1,4 +1,5 @@
-﻿<div class="reports-container">
+﻿<h2>استعلام</h2>
+<div class="reports-container">
     <h2>قائمة التقارير</h2>
 
     <div class="reports-grid">
@@ -26,12 +27,18 @@
             <span>🏢</span>
             <p>استعلام بالجهة الطالبة</p>
         </a>
-
+        <a href="@Url.Action("FilterByBackToRequesterReportView", "Home")" class="report-card">
+            <span>📄↩️</span>
+            <p>استعلام عن ارجاع طلب الصرف للجهة الطالبة</p>
+        </a>
         <a href="@Url.Action("FilterByVendorReportView", "Home")" class="report-card">
             <span>🏭</span>
             <p>استعلام باسم المورد</p>
         </a>
-
+        <a href="@Url.Action("FilterByBackToVendorReportView", "Home")" class="report-card">
+            <span>🧾↩️</span>
+            <p>استعلام عن ارجاع فاتورة للمورد</p>
+        </a>
         <a href="@Url.Action("FilterByExchangeNumberReportView", "Home")" class="report-card">
             <span>🔢</span>
             <p>استعلام برقم طلب الصرف</p>
@@ -55,11 +62,14 @@
         <a href="@Url.Action("FilterByInvoiceReceiptDateReportView", "Home")" class="report-card">
             <span>📥</span>
             <p>استعلام بتاريخ استلام الفاتورة</p>
-        </a>
-
+        </a>        
         <a href="@Url.Action("FilterByAreaReportView", "Home")" class="report-card">
             <span>📍</span>
             <p>استعلام بالموقع</p>
+        </a>
+        <a href="@Url.Action("FilterByAreaAndDateReportView", "Home")" class="report-card">
+            <span>📍</span>
+            <p>استعلام بالموقع و التاريخ</p>
         </a>
     </div>
 

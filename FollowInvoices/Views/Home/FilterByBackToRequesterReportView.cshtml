@@ -2,12 +2,8 @@
     <input class="auto-fit-input" value="@ViewBag.ViewName" disabled />
 </div>
 <div class="form-container">
-    <div class="input-wrapper">
-        <label>تاريخ استلام الفاتورة</label>
-        <input class="input" type="date" id="invoice-receipt-date" lang="ar" required>
-    </div>
     <div class="button-container">
-        <button class="custom-btn" onclick="FilterByInvoiceReceiptDateReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="FilterByBackToRequesterReport()">تنفيذ</button>
         <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
@@ -47,10 +43,9 @@
         // Redirect to the URL
         window.location.href = url;
     }
-    function FilterByInvoiceReceiptDateReport() {
+    function FilterByBackToRequesterReport() {
         var id = getElementValue("invoice-receipt-date");
-        var url = '@Url.Action("FilterByInvoiceReceiptDateReport", "Home")' +
-            '?id=' + encodeURIComponent(id);
+        var url = '@Url.Action("FilterByBackToRequesterReport", "Home")';
 
         // Redirect to the URL
         window.location.href = url;
