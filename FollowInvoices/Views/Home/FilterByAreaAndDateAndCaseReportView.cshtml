@@ -1,0 +1,80 @@
+<div style="position: center;">
+    <input class="auto-fit-input" value="@ViewBag.ViewName" disabled />
+</div>
+<div class="form-container">
+    <div class="input-wrapper">
+        <label>تاريخ تسليم القيود</label>
+        <input class="input" type="date" id="date" lang="ar" required>
+    </div>
+    <div class="input-wrapper">
+        <label for="area">الموقع</label>
+        <select id="area" required>
+            <option value="" selected></option>
+            <option value="الرئيسي">الرئيسي</option>
+            <option value="المعدية">المعدية</option>
+        </select>
+    </div>
+    <div class="input-wrapper">
+        <label for="exchange-case">حالة الصرف</label>
+        <select id="exchange-case" required>
+            <option value="" selected></option>
+            <option value="تسويات">تسويات</option>
+            <option value="المصرفية">المصرفية</option>
+            <option value="الحسابات">الحسابات</option>
+            <option value="المراجعة">المراجعة</option>
+        </select>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="FilterByAreaAndDateAndCaseReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي قائمة التقارير</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("Query", "Home")';
+        window.location.href = url;
+    }
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        // Redirect to the URL
+        window.location.href = url;
+    }
+    function FilterByAreaAndDateAndCaseReport() {
+        var id = getElementValue("area");
+        var date = getElementValue("date");
+        var exchangeCase = getElementValue("exchange-case");
+        var url = '@Url.Action("FilterByAreaAndDateAndCaseReport", "Home")' +
+            '?id=' + encodeURIComponent(id) +
+            '&date=' + encodeURIComponent(date) +
+            '&exchangeCase=' + encodeURIComponent(exchangeCase);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

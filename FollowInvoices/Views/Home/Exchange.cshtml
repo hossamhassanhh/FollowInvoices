@@ -19,25 +19,19 @@
     <div class="input-wrapper">
         <label>يرجي ادخال اسم الموظف</label>
         <select id="employee-name" required>
-            <option value="" selected></option>
-            <option value="خالد يوسف">خالد يوسف</option>
-            <option value="محمد الهاكع">محمد الهاكع</option>
-            <option value="الشيماء ابوبكر">الشيماء ابوبكر</option>
-            <option value="مني شاهين">مني شاهين</option>
-            <option value="ريهام الشيح">ريهام الشيح</option>
-            <option value="ايات اسامة">ايات اسامة</option>
-            <option value="تامر عبد الفتاح">تامر عبد الفتاح</option>
-            <option value="مني الشهاوي">مني الشهاوي</option>
-            <option value="مدحت سمیر">مدحت سمیر</option>
-            <option value="سامح مصطفي">سامح مصطفي</option>
-            <option value="ندا سمير">ندا سمير</option>
-            <option value="شيماء ماجد">شيماء ماجد</option>
-            <option value="اسلام علی">اسلام علی</option>
-            <option value="رانيا ممدوح">رانيا ممدوح</option>
-            <option value="محمد اسماعیل">محمد اسماعیل</option>
-            <option value="نجلاء سعد">نجلاء سعد</option>
-            <option value="ايمن آمين">ايمن آمين</option>
-        </select>
+            @{ var employees = (ViewBag.Employees ?? FollowInvoices.Models.EmployeeDirectory.CairoEmployees); }
+            @for (var j = 0; j < employees.Count; j++)
+            {
+                if (j == 0)
+                {
+                    <option value="@employees[j]" selected>@employees[j]</option>
+                }
+                else
+                {
+                    <option value="@employees[j]">@employees[j]</option>
+                }
+            }
+</select>
     </div>
     <div class="input-wrapper">
         <label>رقم الصرف</label>

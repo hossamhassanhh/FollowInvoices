@@ -1,0 +1,60 @@
+<div style="position: center;">
+    <input class="auto-fit-input" value="@ViewBag.ViewName" disabled />
+</div>
+<div class="form-container">
+    <div class="input-wrapper">
+        <div class="input-wrapper">
+            <label>التاريخ</label>
+            <input class="input" type="date" id="date" lang="ar" required>
+        </div>
+    </div>
+    <div class="button-container">
+        <button class="custom-btn" onclick="FilterByMuraja3aReport()">تنفيذ</button>
+        <button class="custom-btn" onclick="GoToQueryMainPage()">الرجوع إلي شاشة تسليم القيود</button>
+        <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
+    </div>
+</div>
+
+<script src="/js/jquery-3.7.1.min.js"></script>
+
+<script type="text/javascript">
+    function getElementValue(elementId) {
+        const element = document.getElementById(elementId);
+
+        if (!element) {
+            console.error(`Element with ID ${elementId} not found.`);
+            return null;
+        }
+
+        // Check if the element is a select dropdown
+        if (element.tagName === 'SELECT') {
+            return element.options[element.selectedIndex]?.value || '';
+        }
+        // Check if the element is an input, textarea, or other input-like element
+        else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            return element.value;
+        }
+        // Handle other cases (e.g., div, span, etc.)
+        else {
+            console.error(`Unsupported element type: ${element.tagName}`);
+            return null;
+        }
+    }
+    function GoToQueryMainPage() {
+        var url = '@Url.Action("LastStep", "Home")';
+        window.location.href = url;
+    }
+    function GoToHomePage() {
+        var url = '@Url.Action("Index", "Home")';
+        // Redirect to the URL
+        window.location.href = url;
+    }
+    function FilterByMuraja3aReport() {
+        var date = getElementValue("date");
+        var url = '@Url.Action("FilterByMuraja3aReport", "Home")' +
+            '?date=' + encodeURIComponent(date);
+
+        // Redirect to the URL
+        window.location.href = url;
+    }
+</script>

@@ -191,9 +191,19 @@
     <div class="input-wrapper">
         <label for="area">الموقع</label>
         <select id="area" required>
-            <option value="" selected></option>
-            <option value="الرئيسي">الرئيسي</option>
-            <option value="المعدية">المعدية</option>
+            @{ var areaOptions = (ViewBag.AreaOptions ?? new List<string> { "الرئيسي", "المعدية" }); }
+            @for (var j = 0; j < areaOptions.Count; j++)
+            {
+                if (j == 0)
+                {
+                    <option value="@areaOptions[j]" selected>@areaOptions[j]</option>
+                }
+                else
+                {
+                    <option value="@areaOptions[j]">@areaOptions[j]</option>
+                }
+            }
+
         </select>
     </div>
     <div class="button-container">

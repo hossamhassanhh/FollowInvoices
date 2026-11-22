@@ -72,6 +72,21 @@
 
     // Determine which columns have at least one non-empty/non-null value
     var visibleColumns = new List<System.Data.DataColumn>();
+    // Column names that should stay visible even if all their values are empty
+    // (requested by the employee report so delivery columns are always shown)
+    var alwaysShowColumns = new HashSet<string>();
+    var alwaysShow = ViewBag.AlwaysShowColumns?.ToString();
+    if (!string.IsNullOrWhiteSpace(alwaysShow))
+    {
+        foreach (var name in alwaysShow.Split('|'))
+        {
+            var trimmed = name.Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+            {
+                alwaysShowColumns.Add(trimmed);
+            }
+        }
+    }
     if (dataTable != null)
     {
         foreach (System.Data.DataColumn col in dataTable.Columns)
@@ -86,7 +101,7 @@
                     break;
                 }
             }
-            if (hasValue)
+            if (hasValue || alwaysShowColumns.Contains(col.ColumnName))
             {
                 visibleColumns.Add(col);
             }
