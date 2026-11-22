@@ -42,12 +42,15 @@
                 <div class="icon-label">نظام متابعة الفواتير</div>
             </div>
             <div class="input-wrapper">
-                <label>اسم المستخدم</label>
-                <input type="text" id="username" required>
+                <label for="username">اسم المستخدم</label>
+                <input type="text" id="username" placeholder="اسم المستخدم" required>
             </div>
             <div class="input-wrapper">
-                <label>الرقم السري</label>
-                <input type="password" id="password" required>
+                <label for="password">الرقم السري</label>
+                <div style="position: relative;">
+                    <input type="password" id="password" required style="width: 100%; text-align: right; padding-left: 34px;">
+                    <span id="toggle-password" title="إظهار/اخفاء" style="position: absolute; left: 2px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #0077b6;">🔒</span>
+                </div>
             </div>
             <div class="button-container">
                 <button id="loginButton" class="custom-btn" onclick="handleLoginClick(event)">تنفيذ</button>
@@ -65,7 +68,7 @@
             var password = $('#password').val();
 
             if (!username || !password) {
-                alert("Please enter both username and password.");
+                alert("يرجى إدخال اسم المستخدم والرقم السري.");
                 return;
             }
 
@@ -90,6 +93,11 @@
             if (event.key === 'Enter') {
                 handleLoginClick(event);
             }
+        });
+
+        document.getElementById('toggle-password').addEventListener('click', function () {
+            var pwd = document.getElementById('password');
+            pwd.type = (pwd.type === 'password') ? 'text' : 'password';
         });
     </script>
 </body>

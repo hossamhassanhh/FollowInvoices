@@ -6,7 +6,20 @@
    
     <div class="input-wrapper">
         <label>الموظف المسئول</label>
-        <input type="text" id="employee-name" required>
+        <select id="employee-name" required>
+            @{ var employees = (ViewBag.Employees ?? FollowInvoices.Models.EmployeeDirectory.CairoEmployees); }
+            @for (var j = 0; j < employees.Count; j++)
+            {
+                if (j == 0)
+                {
+                    <option value="@employees[j]" selected>@employees[j]</option>
+                }
+                else
+                {
+                    <option value="@employees[j]">@employees[j]</option>
+                }
+            }
+        </select>
     </div>
 </div>
 <div class="button-container">

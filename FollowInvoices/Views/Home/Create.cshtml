@@ -39,26 +39,26 @@
 <h2>اضافة فاتورة</h2>
 <div class="form-container">
     <div class="input-wrapper">
-        <label>اسم المستخدم</label>
+        <label for="user-name">اسم المستخدم</label>
         <input type="text" id="user-name" value="@User.Identity.Name" disabled/>
     </div>
     <div class="input-wrapper">
-        <label>رقم الايزو</label>
+        <label for="iso-number">رقم الايزو</label>
         <input type="text" id="iso-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="@ViewBag.NextIsoNumber" oninput="updateInvoiceNumber()" />
     </div>
     <div class="input-wrapper">
-        <label>تاريخ الايزو</label>
+        <label for="iso-date">تاريخ الايزو</label>
         <input type="text" id="iso-date" value="@ViewBag.IsoDate" />
     </div>
 
     @* <div class="input-wrapper">
-        <label>المورد</label>
+        <label for="vendor-dropdown">المورد</label>
         <select id="vendor-dropdown" required>
             <option value="">اختر المورد</option>
         </select>
     </div> *@
     <div class="input-wrapper">
-        <label>المورد</label>
+        <label for="vendorSearch">المورد</label>
         <div class="custom-select-container" id="vendor-container">
             @if (!string.IsNullOrEmpty(ViewBag.VendorName))
             {
@@ -94,12 +94,12 @@
         </div>
     </div>
     <div class="input-wrapper">
-        <label>رقم امر التوريد</label>
+        <label for="po-number">رقم امر التوريد</label>
         <input type="text" id="po-number" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="input-wrapper">
-        <label>مبلغ الفاتورة ١</label>
-        <input type="text" id="invoice-value-1" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
+        <label for="invoice-value-1">مبلغ الفاتورة ١</label>
+        <input id="invoice-value-1" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
     </div>
     <div class="input-wrapper">
         <label for="currency-1">العملة ١</label>
@@ -116,11 +116,11 @@
         </select>
     </div>
     <div class="input-wrapper">
-        <label>مبلغ الفاتورة ٢</label>
-        <input type="text" id="invoice-value-2" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
+        <label for="invoice-value-2">مبلغ الفاتورة ٢</label>
+        <input id="invoice-value-2" type="number" inputmode="decimal" min="0" step="any" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" required>
     </div>
     <div class="input-wrapper">
-        <label>العملة ٢</label>
+        <label for="currency-2">العملة ٢</label>
         <select id="currency-2" required>
             <option value="" selected></option>
             <option value="جنيه مصرى">جنيه مصرى</option>
@@ -134,15 +134,15 @@
         </select>
     </div>
     <div class="input-wrapper">
-        <label>تاريخ الفاتورة</label>
+        <label for="invoice-date">تاريخ الفاتورة</label>
         <input class="input" type="date" id="invoice-date" lang="ar" required>
     </div>
     <div class="input-wrapper">
-        <label>تاريخ استلام الفاتورة</label>
+        <label for="invoice-receipt-date">تاريخ استلام الفاتورة</label>
         <input class="input" type="date" id="invoice-receipt-date" lang="ar" required>
     </div>   
     <div class="input-wrapper">
-        <label>الجهة الطالبة</label>
+        <label for="requester">الجهة الطالبة</label>
         <select id="requester" required>
             <option value="" selected></option>
             <option value="إدارة العلاقات العامة">إدارة العلاقات العامة</option>
@@ -171,7 +171,7 @@
         </select>
     </div>
     <div class="input-wrapper" id="to-requester-div">
-        <label>تاريخ الارسال للجهة الطالبة</label>
+        <label for="to-requester-date">تاريخ الارسال للجهة الطالبة</label>
         <input class="input" type="date" id="to-requester-date" lang="ar">
     </div>
 
@@ -184,7 +184,7 @@
     </div>
 
     <div class="input-wrapper" id="to-vendor-div" style="display: none;">
-        <label>تاريخ الارسال للمورد</label>
+        <label for="to-vendor-date">تاريخ الارسال للمورد</label>
         <input class="input" type="date" id="to-vendor-date" lang="ar">
     </div>
 
@@ -208,7 +208,6 @@
     </div>
     <div class="button-container">
         <button class="custom-btn" onclick="RedirectToExecuteCreateAction()">تنفيذ</button>
-        <button class="custom-btn" onclick="RedirectToExecuteEditAction()">تعديل</button>
         <button class="custom-btn" onclick="GoToHomePage()">الرجوع إلي القائمة الرئيسية</button>
     </div>
 </div>

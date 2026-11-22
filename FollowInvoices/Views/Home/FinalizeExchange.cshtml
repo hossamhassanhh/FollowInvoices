@@ -1,7 +1,7 @@
 ﻿<h2>انهاء الصرف</h2>
 <div class="form-container">
     <div class="input-wrapper">
-        <label>المورد</label>
+        <label for="vendor-dropdown">المورد</label>
         <select id="vendor-dropdown" required oninput="updateInvoiceNumber()">
             <option value="">اختر المورد</option>
         </select>
@@ -17,7 +17,7 @@
         </div>        
     </div>
     <div class="input-wrapper">
-        <label>يرجي ادخال اسم الموظف</label>
+        <label for="employee-name">يرجي ادخال اسم الموظف</label>
         <select id="employee-name" disabled>
             @{ var employees = (ViewBag.Employees ?? FollowInvoices.Models.EmployeeDirectory.CairoEmployees); }
             @for (var j = 0; j < employees.Count; j++)
@@ -34,7 +34,7 @@
 </select>
     </div>
     <div class="input-wrapper">
-        <label>رقم الصرف</label>
+        <label for="exchange-number">رقم الصرف</label>
         <input type="text" id="exchange-number" disabled>
     </div>
     <div class="input-wrapper">
@@ -55,8 +55,8 @@
         <input type="date" id="finalize-exchange-date" required>
     </div>
     <div class="input-wrapper">
-        <label>المبلغ</label>
-        <input type="text" id="invoice-value" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <label for="invoice-value">المبلغ</label>
+        <input type="number" inputmode="decimal" min="0" step="any" id="invoice-value" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="input-wrapper">
         <label for="currency">العملة</label>

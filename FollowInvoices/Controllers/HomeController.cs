@@ -949,6 +949,7 @@ namespace FollowInvoices.Controllers
         //}
         public IActionResult PassToExchange()
         {
+            ViewBag.Employees = EmployeeDirectory.EmployeesForArea(CheckPermittedArea());
             return View();
         }
         [HttpGet]
